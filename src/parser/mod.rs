@@ -65,7 +65,7 @@ impl<M: Match> Matcher<M> {
         Matcher(Opt(self.0))
     }
 
-    pub fn map_match<F, T, E>(self, f: F) -> Parser<MapMatch<M, F>>
+    pub fn convert<F, T, E>(self, f: F) -> Parser<MapMatch<M, F>>
     where
         F: Fn(&str) -> Result<T, E>,
         E: std::error::Error + 'static,

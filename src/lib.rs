@@ -16,7 +16,7 @@ fn number() -> Parser<impl Parse<Output = f64>> {
     let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
     let number = tag("-").opt() + integer() + frac.opt() + exp.opt();
 
-    number.map_match(f64::from_str)
+    number.convert(f64::from_str)
 }
 
 #[cfg(test)]
