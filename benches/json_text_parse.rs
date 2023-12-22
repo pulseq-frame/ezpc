@@ -1,9 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::{collections::HashMap, str::FromStr};
 use text_parse::*;
-
-// NOTE: This code is taken from the crates.io example, not the pom benchmark!
-// It is missing parsing for utf16 strings!
 
 #[derive(Clone)]
 pub enum JsonValue {
@@ -20,11 +16,11 @@ fn space() -> Matcher<impl Match> {
 }
 
 fn number() -> Parser<impl Parse<Output = f64>> {
-    let integer = (one_of("123456789") + one_of("0123456789").repeat(0..)) | tag("0");
+    let integer = one_of("123456789") + one_of("0123456789").repeat(0..) | tag("0");
     let frac = tag(".") + one_of("0123456789").repeat(1..);
     let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
     let number = tag("-").opt() + integer + frac.opt() + exp.opt();
-    number.convert(|s| f64::from_str(&s))
+    number.convert(f64::from_str)
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
@@ -37,15 +33,27 @@ fn string() -> Parser<impl Parse<Output = String>> {
         | tag("r").val('\r')
         | tag("t").val('\t');
     let escape_sequence = tag("\\") + special_char;
-    let string = tag("\"")
-        + (none_of("\\\"").convert(|s| char::from_str(s)) | escape_sequence).repeat(0..)
-        + tag("\"");
-    string.map(|cs| cs.into_iter().collect())
+    let char_string = (none_of("\\\"").convert(char::from_str) | escape_sequence)
+        .repeat(1..)
+        .map(|cs| cs.into_iter().collect::<String>());
+    // let utf16_char = tag("\\u")
+    //     * is_a(hex_digit)
+    //         .repeat(4)
+    //         .convert(String::from_utf8)
+    //         .convert(|digits| u16::from_str_radix(&digits, 16));
+    // let utf16_string = utf16_char.repeat(1..).map(|chars| {
+    //     decode_utf16(chars)
+    //         .map(|r| r.unwrap_or(REPLACEMENT_CHARACTER))
+    //         .collect::<String>()
+    // });
+    // let string = sym(b'"') * (char_string | utf16_string).repeat(0..) - sym(b'"');
+    let string = tag("\"") + char_string.repeat(0..) + tag("\"");
+    string.map(|strings| strings.concat())
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
     let elems = list(value.wrap(), tag(",") + space());
-    tag("[") + space() + elems + tag("]")
+    tag("[b'[']") + space() + elems + tag("]")
 }
 
 fn object() -> Parser<impl Parse<Output = HashMap<String, JsonValue>>> {
@@ -70,11 +78,13 @@ pub fn json() -> Parser<impl Parse<Output = JsonValue>> {
     space() + value()
 }
 
-pub fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("parse number", |b| {
-        b.iter(|| number().parse(black_box("-12.94e-5")))
-    });
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn parse_json() {
+        let input = std::fs::read_to_string("assets/data.json").unwrap();
+        assert!(super::json().parse(&input).is_ok());
+    }
 }
 
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
