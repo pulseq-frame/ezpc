@@ -1,6 +1,9 @@
 pub mod add;
 pub mod convert;
+pub mod none_of;
 pub mod one_of;
+pub mod list;
+pub mod call;
 pub mod opt;
 pub mod or;
 pub mod repeat;
@@ -13,7 +16,10 @@ use crate::{
 };
 use opt::Opt;
 
-use self::{convert::MapMatch, repeat::Repeat};
+use self::{
+    convert::{Convert, Map, MapMatch, MapVal},
+    repeat::Repeat,
+};
 
 pub trait Parse {
     type Output;
@@ -35,6 +41,21 @@ impl<T: Parse> Parser<T> {
         Parser(Opt(self.0))
     }
 
+    pub fn convert<F, O, E>(self, f: F) -> Parser<Convert<T, F, O, E>>
+    where
+        F: Fn(T::Output) -> Result<O, E> + 'static,
+        E: std::error::Error + 'static,
+    {
+        Parser(Convert { parser: self.0, f })
+    }
+
+    pub fn map<F, O>(self, f: F) -> Parser<Map<T, F, O>>
+    where
+        F: Fn(T::Output) -> O + 'static,
+    {
+        Parser(Map { parser: self.0, f })
+    }
+
     pub fn parse(&self, source: &str) -> Result<T::Output, ParseError> {
         self.0.parse(source.into()).and_then(|(out, rest)| {
             if rest.is_empty() {
@@ -46,6 +67,8 @@ impl<T: Parse> Parser<T> {
     }
 }
 
+// TODO: for cleaner code, could return Result<Input, ParseError>, because
+// this would remove a bunch of () from the code. Also, rename parse to match
 pub trait Match {
     fn parse(&self, input: Input) -> ParseResult<()>;
 }
@@ -63,6 +86,13 @@ impl<M: Match> Matcher<M> {
 
     pub fn opt(self) -> Matcher<Opt<M>> {
         Matcher(Opt(self.0))
+    }
+
+    pub fn val<O: Clone>(self, value: O) -> Parser<MapVal<M, O>> {
+        Parser(MapVal {
+            matcher: self.0,
+            value,
+        })
     }
 
     pub fn convert<F, T, E>(self, f: F) -> Parser<MapMatch<M, F>>

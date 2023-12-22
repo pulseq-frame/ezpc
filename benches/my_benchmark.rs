@@ -2,6 +2,10 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::{collections::HashMap, str::FromStr};
 use text_parse::*;
 
+// NOTE: This code is taken from the crates.io example, not the pom benchmark!
+// It is missing parsing for utf16 strings!
+
+#[derive(Clone)]
 pub enum JsonValue {
     Null,
     Bool(bool),
@@ -24,35 +28,37 @@ fn number() -> Parser<impl Parse<Output = f64>> {
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
-    let special_char = tag("\\")
-        | tag("/")
-        | tag("\"")
-        | tag("b").map(|_| b'\x08')
-        | tag("f").map(|_| b'\x0C')
-        | tag("n").map(|_| b'\n')
-        | tag("r").map(|_| b'\r')
-        | tag("t").map(|_| b'\t');
+    let special_char = tag("\\").val('\\')
+        | tag("/").val('/')
+        | tag("\"").val('"')
+        | tag("b").val('\x08')
+        | tag("f").val('\x0C')
+        | tag("n").val('\n')
+        | tag("r").val('\r')
+        | tag("t").val('\t');
     let escape_sequence = tag("\\") + special_char;
-    let string = tag("\"") + (none_of("\\\"") | escape_sequence).repeat(0..) + tag("\"");
-    string.convert(String::from_utf8)
+    let string = tag("\"")
+        + (none_of("\\\"").convert(|s| char::from_str(s)) | escape_sequence).repeat(0..)
+        + tag("\"");
+    string.map(|cs| cs.into_iter().collect())
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    let elems = list(call(value), tag(",") + space());
+    let elems = list(value.wrap(), tag(",") + space());
     tag("[") + space() + elems + tag("]")
 }
 
 fn object() -> Parser<impl Parse<Output = HashMap<String, JsonValue>>> {
-    let member = string() + space() + tag(":") + space() + call(value);
+    let member = string() + space() + tag(":") + space() + value.wrap();
     let members = list(member, tag(",") + space());
     let obj = tag("{") + space() + members + tag("}");
     obj.map(|members| members.into_iter().collect::<HashMap<_, _>>())
 }
 
 fn value() -> Parser<impl Parse<Output = JsonValue>> {
-    (tag("null").map(|_| JsonValue::Null)
-        | tag("true").map(|_| JsonValue::Bool(true))
-        | tag("false").map(|_| JsonValue::Bool(false))
+    (tag("null").val(JsonValue::Null)
+        | tag("true").val(JsonValue::Bool(true))
+        | tag("false").val(JsonValue::Bool(false))
         | number().map(|num| JsonValue::Num(num))
         | string().map(|text| JsonValue::Str(text))
         | array().map(|arr| JsonValue::Array(arr))
@@ -60,7 +66,7 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
         + space()
 }
 
-pub fn json() -> Parser<impl Parse<Output =  JsonValue>> {
+pub fn json() -> Parser<impl Parse<Output = JsonValue>> {
     space() + value()
 }
 

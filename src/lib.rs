@@ -5,7 +5,14 @@ mod parser;
 mod range;
 mod result;
 
-pub use parser::{Match, Matcher, Parse, Parser, tag::tag, one_of::one_of};
+pub use parser::{
+    call::{MatchGen, ParseGen, WrapMatcher, WrapParser},
+    list::list,
+    none_of::none_of,
+    one_of::one_of,
+    tag::tag,
+    Match, Matcher, Parse, Parser,
+};
 
 fn integer() -> Matcher<impl Match> {
     tag("0") | (one_of("123456789") + one_of("0123456789").repeat(0..))
