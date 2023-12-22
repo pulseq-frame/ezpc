@@ -1,10 +1,10 @@
 pub mod add;
 pub mod call;
 pub mod convert;
+pub mod is_a;
 pub mod list;
 pub mod none_of;
 pub mod one_of;
-pub mod is_a;
 pub mod opt;
 pub mod or;
 pub mod repeat;
@@ -12,7 +12,7 @@ pub mod tag;
 
 use crate::{
     range::RangeArgument,
-    result::{ParseError, ParseResult},
+    result::{MatchResult, ParseError, ParseResult},
 };
 use opt::Opt;
 
@@ -67,10 +67,8 @@ impl<T: Parse> Parser<T> {
     }
 }
 
-// TODO: for cleaner code, could return Result<Input, ParseError>, because
-// this would remove a bunch of () from the code. Also, rename parse to match
 pub trait Match {
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()>;
+    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a>;
 }
 
 pub struct Matcher<M: Match>(M);

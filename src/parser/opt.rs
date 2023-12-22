@@ -1,4 +1,4 @@
-use crate::result::ParseResult;
+use crate::result::{MatchResult, ParseResult};
 
 use super::{Match, Parse};
 
@@ -15,9 +15,7 @@ impl<T: Parse> Parse for Opt<T> {
 }
 
 impl<T: Match> Match for Opt<T> {
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
-        self.0
-            .parse(input)
-            .map_or(Ok(((), input)), |((), rest)| Ok(((), rest)))
+    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        self.0.parse(input).map_or(Ok(input), |rest| Ok(rest))
     }
 }

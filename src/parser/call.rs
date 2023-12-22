@@ -1,5 +1,5 @@
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::ParseResult;
+use crate::result::{MatchResult, ParseResult};
 
 pub struct ParseGen<O: 'static>(Box<dyn Fn() -> Box<dyn Parse<Output = O>>>);
 
@@ -28,7 +28,7 @@ where
 pub struct MatchGen(Box<dyn Fn() -> Box<dyn Match>>);
 
 impl Match for MatchGen {
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
+    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
         (self.0)().parse(input)
     }
 }

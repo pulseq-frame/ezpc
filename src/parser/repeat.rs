@@ -1,4 +1,4 @@
-use crate::result::{ParseError, ParseResult};
+use crate::result::{MatchResult, ParseError, ParseResult};
 
 use super::{Match, Parse};
 
@@ -34,11 +34,11 @@ impl<T: Parse> Parse for Repeat<T> {
 }
 
 impl<T: Match> Match for Repeat<T> {
-    fn parse<'a>(&self, mut input: &'a str) -> ParseResult<'a, ()> {
+    fn parse<'a>(&self, mut input: &'a str) -> MatchResult<'a> {
         let mut item_count = 0;
 
         for _ in 0..=self.end {
-            if let Ok(((), rest)) = self.parser_or_matcher.parse(input) {
+            if let Ok(rest) = self.parser_or_matcher.parse(input) {
                 item_count += 1;
                 input = rest;
             } else {
@@ -51,7 +51,7 @@ impl<T: Match> Match for Repeat<T> {
                 "Parser didn't apply often enough".into(),
             ))
         } else {
-            Ok(((), input))
+            Ok(input)
         }
     }
 }

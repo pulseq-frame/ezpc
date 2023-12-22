@@ -33,7 +33,7 @@ where
 
         if let Ok((item, mut input)) = self.element.parse(input) {
             items.push(item);
-            while let Ok(((), rest)) = self.separator.parse(input) {
+            while let Ok(rest) = self.separator.parse(input) {
                 match self.element.parse(rest) {
                     Ok((item, rest)) => {
                         items.push(item);

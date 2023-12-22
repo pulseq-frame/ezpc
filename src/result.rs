@@ -2,6 +2,8 @@ use std::{error::Error, fmt::Display};
 
 pub type ParseResult<'a, O> = Result<(O, &'a str), ParseError>;
 
+pub type MatchResult<'a> = Result<&'a str, ParseError>;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
     Generic(String),

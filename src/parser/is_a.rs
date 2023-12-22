@@ -1,5 +1,5 @@
 use super::{Match, Matcher};
-use crate::result::{ParseError, ParseResult};
+use crate::result::{MatchResult, ParseError, ParseResult};
 
 pub struct IsA<F>(F);
 
@@ -14,14 +14,12 @@ impl<F> Match for IsA<F>
 where
     F: Fn(char) -> bool,
 {
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
-        if let Some((c, input)) = pop_char(input) {
+    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        if let Some((c, rest)) = pop_char(input) {
             if (self.0)(c) {
-                Ok(((), input))
+                Ok(rest)
             } else {
-                Err(ParseError::Generic(
-                    "Predicate didn't apply".into(),
-                ))
+                Err(ParseError::Generic("Predicate didn't apply".into()))
             }
         } else {
             Err(ParseError::Generic("Input is empty".into()))

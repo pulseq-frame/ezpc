@@ -14,7 +14,7 @@ where
     type Output = T;
 
     fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        self.matcher.parse(input).and_then(|((), rest)| {
+        self.matcher.parse(input).and_then(|rest| {
             let consumed = rest.as_ptr() as usize - input.as_ptr() as usize;
             match (self.map_func)(&input[..consumed]) {
                 Ok(out) => Ok((out, rest)),
@@ -35,7 +35,7 @@ impl<M: Match, O: Clone> Parse for MapVal<M, O> {
     fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.matcher
             .parse(input)
-            .map(|((), rest)| (self.value.clone(), rest))
+            .map(|rest| (self.value.clone(), rest))
     }
 }
 

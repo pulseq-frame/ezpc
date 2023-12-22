@@ -1,7 +1,7 @@
 use std::ops::Add;
 
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::ParseResult;
+use crate::result::{MatchResult, ParseResult};
 
 pub struct AndPP<P1: Parse, P2: Parse>(P1, P2);
 pub struct AndPM<P1: Parse, M2: Match>(P1, M2);
@@ -24,7 +24,7 @@ impl<P1: Parse, M2: Match> Parse for AndPM<P1, M2> {
     fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
             .parse(input)
-            .and_then(|(out, rest)| self.1.parse(rest).map(|((), rest)| (out, rest)))
+            .and_then(|(out, rest)| self.1.parse(rest).map(|rest| (out, rest)))
     }
 }
 
@@ -34,15 +34,15 @@ impl<M1: Match, P2: Parse> Parse for AndMP<M1, P2> {
     fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
             .parse(input)
-            .and_then(|((), rest)| self.1.parse(rest).map(|(out, rest)| (out, rest)))
+            .and_then(|rest| self.1.parse(rest).map(|(out, rest)| (out, rest)))
     }
 }
 
 impl<M1: Match, M2: Match> Match for AndMM<M1, M2> {
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
+    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
         self.0
             .parse(input)
-            .and_then(|((), rest)| self.1.parse(rest).map(|((), rest)| ((), rest)))
+            .and_then(|rest| self.1.parse(rest).map(|rest| rest))
     }
 }
 

@@ -1,5 +1,5 @@
 use super::{Match, Matcher};
-use crate::result::{ParseError, ParseResult};
+use crate::result::{MatchResult, ParseError};
 
 pub struct OneOf(&'static str);
 
@@ -8,10 +8,10 @@ pub fn one_of(bag: &'static str) -> Matcher<OneOf> {
 }
 
 impl Match for OneOf {
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
+    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, input)) = pop_char(input) {
             if self.0.contains(c) {
-                Ok(((), input))
+                Ok(input)
             } else {
                 Err(ParseError::Generic(
                     "none of the expected characters found".into(),
