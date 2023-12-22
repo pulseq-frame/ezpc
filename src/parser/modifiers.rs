@@ -15,6 +15,11 @@ pub struct ValMatch<M, T> {
     pub(crate) value: T,
 }
 
+pub struct ValParse<P, T> {
+    pub(crate) parser: P,
+    pub(crate) value: T,
+}
+
 pub struct MapMatch<M, F> {
     pub(crate) matcher: M,
     pub(crate) map_func: F,
@@ -22,6 +27,11 @@ pub struct MapMatch<M, F> {
 
 pub struct MapParse<P, F> {
     pub(crate) parser: P,
+    pub(crate) map_func: F,
+}
+
+pub struct TryMapMatch<M, F> {
+    pub(crate) matcher: M,
     pub(crate) map_func: F,
 }
 
@@ -110,6 +120,30 @@ impl<M: Match, T: Clone> Parse for ValMatch<M, T> {
     }
 }
 
+impl<P: Parse, T: Clone> Parse for ValParse<P, T> {
+    type Output = T;
+
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        self.parser
+            .parse(input)
+            .map(|(_, rest)| (self.value.clone(), rest))
+    }
+}
+
+impl<M, F, O> Parse for MapMatch<M, F>
+where
+    M: Match,
+    F: Fn(&str) -> O,
+{
+    type Output = O;
+
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        self.matcher
+            .parse(input)
+            .map(|rest| ((self.map_func)(consumed(input, rest)), rest))
+    }
+}
+
 impl<P, F, O> Parse for MapParse<P, F>
 where
     P: Parse,
@@ -124,21 +158,21 @@ where
     }
 }
 
-impl<M: Match, F, T, E> Parse for MapMatch<M, F>
+impl<M, F, O, E> Parse for TryMapMatch<M, F>
 where
-    F: Fn(&str) -> Result<T, E>,
+    M: Match,
+    F: Fn(&str) -> Result<O, E> + 'static,
     E: std::error::Error + 'static,
 {
-    type Output = T;
+    type Output = O;
 
     fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        self.matcher.parse(input).and_then(|rest| {
-            let consumed = rest.as_ptr() as usize - input.as_ptr() as usize;
-            match (self.map_func)(&input[..consumed]) {
+        self.matcher
+            .parse(input)
+            .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
                 Err(err) => Err(ParseError::Generic(err.to_string())),
-            }
-        })
+            })
     }
 }
 
@@ -158,4 +192,14 @@ where
                 Err(err) => Err(ParseError::Generic(err.to_string())),
             })
     }
+}
+
+/// Helper function that returns the parsed part of the source str
+fn consumed<'a>(source: &'a str, substr: &'a str) -> &'a str {
+    let start_source = source.as_ptr() as usize;
+    let start_substr = substr.as_ptr() as usize;
+    assert!(start_substr > start_source);
+
+    let advanced_by = start_substr - start_source;
+    &source[..advanced_by]
 }
