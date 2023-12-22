@@ -36,18 +36,16 @@ fn string() -> Parser<impl Parse<Output = String>> {
     let char_string = (none_of("\\\"").convert(char::from_str) | escape_sequence)
         .repeat(1..)
         .map(|cs| cs.into_iter().collect::<String>());
-    // let utf16_char = tag("\\u")
-    //     * is_a(hex_digit)
-    //         .repeat(4)
-    //         .convert(String::from_utf8)
-    //         .convert(|digits| u16::from_str_radix(&digits, 16));
-    // let utf16_string = utf16_char.repeat(1..).map(|chars| {
-    //     decode_utf16(chars)
-    //         .map(|r| r.unwrap_or(REPLACEMENT_CHARACTER))
-    //         .collect::<String>()
-    // });
-    // let string = sym(b'"') * (char_string | utf16_string).repeat(0..) - sym(b'"');
-    let string = tag("\"") + char_string.repeat(0..) + tag("\"");
+    let utf16_char = tag("\\u")
+        + is_a(|c| c.is_ascii_hexdigit())
+            .repeat(4)
+            .convert(|digits| u16::from_str_radix(&digits, 16));
+    let utf16_string = utf16_char.repeat(1..).map(|chars| {
+        std::char::decode_utf16(chars)
+            .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
+            .collect::<String>()
+    });
+    let string = tag("\"") + (char_string | utf16_string).repeat(0..) + tag("\"");
     string.map(|strings| strings.concat())
 }
 

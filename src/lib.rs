@@ -4,6 +4,7 @@ mod result;
 
 pub use parser::{
     call::{MatchGen, ParseGen, WrapMatcher, WrapParser},
+    is_a::is_a,
     list::list,
     none_of::none_of,
     one_of::one_of,

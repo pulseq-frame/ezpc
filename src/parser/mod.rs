@@ -4,6 +4,7 @@ pub mod convert;
 pub mod list;
 pub mod none_of;
 pub mod one_of;
+pub mod is_a;
 pub mod opt;
 pub mod or;
 pub mod repeat;
