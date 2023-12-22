@@ -15,7 +15,7 @@ fn json(c: &mut Criterion) {
 
     group.bench_function("text-parse", |b| {
         b.iter(|| {
-            json_text_parse::json().parse(black_box(&input)).ok();
+            json_text_parse::json().parse_all(black_box(&input)).ok();
         })
     });
 

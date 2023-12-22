@@ -8,10 +8,7 @@ use crate::{
     range::RangeArgument,
     result::{MatchResult, ParseError, ParseResult},
 };
-
-use self::modifiers::{
-    MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
-};
+use modifiers::{MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse};
 
 pub trait Parse {
     type Output;
@@ -21,6 +18,16 @@ pub trait Parse {
 pub struct Parser<T: Parse>(T);
 
 impl<P: Parse> Parser<P> {
+    pub fn parse_all(&self, source: &str) -> Result<P::Output, ParseError> {
+        self.0.apply(source.into()).and_then(|(out, rest)| {
+            if rest.is_empty() {
+                Ok(out)
+            } else {
+                Err(ParseError::Generic("Didn't parse to EOF".into()))
+            }
+        })
+    }
+
     pub fn repeat<R: RangeArgument>(self, range: R) -> Parser<Repeat<P>> {
         Parser(Repeat {
             parser_or_matcher: self.0,
@@ -60,16 +67,6 @@ impl<P: Parse> Parser<P> {
             map_func: f,
         })
     }
-
-    pub fn parse(&self, source: &str) -> Result<P::Output, ParseError> {
-        self.0.apply(source.into()).and_then(|(out, rest)| {
-            if rest.is_empty() {
-                Ok(out)
-            } else {
-                Err(ParseError::Generic("Didn't parse to EOF".into()))
-            }
-        })
-    }
 }
 
 pub trait Match {
@@ -79,6 +76,16 @@ pub trait Match {
 pub struct Matcher<M: Match>(M);
 
 impl<M: Match> Matcher<M> {
+    pub fn match_all(&self, source: &str) -> Result<(), ParseError> {
+        self.0.apply(source.into()).and_then(|rest| {
+            if rest.is_empty() {
+                Ok(())
+            } else {
+                Err(ParseError::Generic("Didn't match to EOF".into()))
+            }
+        })
+    }
+
     pub fn repeat<R: RangeArgument>(self, range: R) -> Matcher<Repeat<M>> {
         Matcher(Repeat {
             parser_or_matcher: self.0,

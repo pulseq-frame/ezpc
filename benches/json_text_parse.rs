@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn parse_json() {
         let input = std::fs::read_to_string("assets/data.json").unwrap();
-        println!("{:#?}", super::json().parse(&input));
-        assert!(super::json().parse(&input).is_ok());
+        println!("{:#?}", super::json().parse_all(&input));
+        assert!(super::json().parse_all(&input).is_ok());
     }
 }
