@@ -27,7 +27,7 @@ where
 // All the Match implementations for the Matchers above
 
 impl Match for Tag {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if input.starts_with(self.0) {
             Ok(&input[self.0.len()..])
         } else {
@@ -37,7 +37,7 @@ impl Match for Tag {
 }
 
 impl Match for OneOf {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, input)) = pop_char(input) {
             if self.0.contains(c) {
                 Ok(input)
@@ -53,7 +53,7 @@ impl Match for OneOf {
 }
 
 impl Match for NoneOf {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if self.0.contains(c) {
                 Err(ParseError::Generic(
@@ -72,7 +72,7 @@ impl<F> Match for IsA<F>
 where
     F: Fn(char) -> bool,
 {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if (self.0)(c) {
                 Ok(rest)

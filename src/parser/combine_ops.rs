@@ -75,38 +75,38 @@ impl<M1: Match, M2: Match> BitOr<Matcher<M2>> for Matcher<M1> {
 impl<P1: Parse, P2: Parse> Parse for AndPP<P1, P2> {
     type Output = (P1::Output, P2::Output);
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
-            .parse(input)
-            .and_then(|(out1, rest)| self.1.parse(rest).map(|(out2, rest)| ((out1, out2), rest)))
+            .apply(input)
+            .and_then(|(out1, rest)| self.1.apply(rest).map(|(out2, rest)| ((out1, out2), rest)))
     }
 }
 
 impl<P1: Parse, M2: Match> Parse for AndPM<P1, M2> {
     type Output = P1::Output;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
-            .parse(input)
-            .and_then(|(out, rest)| self.1.parse(rest).map(|rest| (out, rest)))
+            .apply(input)
+            .and_then(|(out, rest)| self.1.apply(rest).map(|rest| (out, rest)))
     }
 }
 
 impl<M1: Match, P2: Parse> Parse for AndMP<M1, P2> {
     type Output = P2::Output;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
-            .parse(input)
-            .and_then(|rest| self.1.parse(rest).map(|(out, rest)| (out, rest)))
+            .apply(input)
+            .and_then(|rest| self.1.apply(rest).map(|(out, rest)| (out, rest)))
     }
 }
 
 impl<M1: Match, M2: Match> Match for AndMM<M1, M2> {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         self.0
-            .parse(input)
-            .and_then(|rest| self.1.parse(rest).map(|rest| rest))
+            .apply(input)
+            .and_then(|rest| self.1.apply(rest).map(|rest| rest))
     }
 }
 
@@ -119,19 +119,19 @@ where
 {
     type Output = P1::Output;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        match self.0.parse(input) {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        match self.0.apply(input) {
             Ok((out, rest)) => Ok((out, rest)),
-            Err(_) => self.1.parse(input),
+            Err(_) => self.1.apply(input),
         }
     }
 }
 
 impl<M1: Match, M2: Match> Match for OrMM<M1, M2> {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        match self.0.parse(input) {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        match self.0.apply(input) {
             Ok(rest) => Ok(rest),
-            Err(_) => self.1.parse(input),
+            Err(_) => self.1.apply(input),
         }
     }
 }

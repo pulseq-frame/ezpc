@@ -45,11 +45,11 @@ pub struct TryMapParse<P, F> {
 impl<T: Parse> Parse for Repeat<T> {
     type Output = Vec<T::Output>;
 
-    fn parse<'a>(&self, mut input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, mut input: &'a str) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
         for _ in 0..=self.end {
-            if let Ok((out, rest)) = self.parser_or_matcher.parse(input) {
+            if let Ok((out, rest)) = self.parser_or_matcher.apply(input) {
                 items.push(out);
                 input = rest;
             } else {
@@ -70,9 +70,9 @@ impl<T: Parse> Parse for Repeat<T> {
 impl<T: Parse> Parse for Opt<T> {
     type Output = Option<T::Output>;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
-            .parse(input)
+            .apply(input)
             .map_or(Ok((None, input)), |(out, rest)| Ok((Some(out), rest)))
     }
 }
@@ -80,11 +80,11 @@ impl<T: Parse> Parse for Opt<T> {
 // Implementations for modified Matchers
 
 impl<T: Match> Match for Repeat<T> {
-    fn parse<'a>(&self, mut input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, mut input: &'a str) -> MatchResult<'a> {
         let mut item_count = 0;
 
         for _ in 0..=self.end {
-            if let Ok(rest) = self.parser_or_matcher.parse(input) {
+            if let Ok(rest) = self.parser_or_matcher.apply(input) {
                 item_count += 1;
                 input = rest;
             } else {
@@ -103,8 +103,8 @@ impl<T: Match> Match for Repeat<T> {
 }
 
 impl<T: Match> Match for Opt<T> {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        self.0.parse(input).map_or(Ok(input), |rest| Ok(rest))
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        self.0.apply(input).map_or(Ok(input), |rest| Ok(rest))
     }
 }
 
@@ -113,9 +113,9 @@ impl<T: Match> Match for Opt<T> {
 impl<M: Match, T: Clone> Parse for ValMatch<M, T> {
     type Output = T;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.matcher
-            .parse(input)
+            .apply(input)
             .map(|rest| (self.value.clone(), rest))
     }
 }
@@ -123,9 +123,9 @@ impl<M: Match, T: Clone> Parse for ValMatch<M, T> {
 impl<P: Parse, T: Clone> Parse for ValParse<P, T> {
     type Output = T;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.parser
-            .parse(input)
+            .apply(input)
             .map(|(_, rest)| (self.value.clone(), rest))
     }
 }
@@ -137,9 +137,9 @@ where
 {
     type Output = O;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.matcher
-            .parse(input)
+            .apply(input)
             .map(|rest| ((self.map_func)(consumed(input, rest)), rest))
     }
 }
@@ -151,9 +151,9 @@ where
 {
     type Output = O;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.parser
-            .parse(input)
+            .apply(input)
             .map(|(tmp, rest)| ((self.map_func)(tmp), rest))
     }
 }
@@ -166,9 +166,9 @@ where
 {
     type Output = O;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.matcher
-            .parse(input)
+            .apply(input)
             .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
                 Err(err) => Err(ParseError::Generic(err.to_string())),
@@ -184,9 +184,9 @@ where
 {
     type Output = O;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.parser
-            .parse(input)
+            .apply(input)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
                 Err(err) => Err(ParseError::Generic(err.to_string())),

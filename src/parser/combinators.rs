@@ -28,13 +28,13 @@ where
 {
     type Output = Vec<P::Output>;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
-        if let Ok((item, mut input)) = self.element.parse(input) {
+        if let Ok((item, mut input)) = self.element.apply(input) {
             items.push(item);
-            while let Ok(rest) = self.separator.parse(input) {
-                match self.element.parse(rest) {
+            while let Ok(rest) = self.separator.apply(input) {
+                match self.element.apply(rest) {
                     Ok((item, rest)) => {
                         items.push(item);
                         input = rest;

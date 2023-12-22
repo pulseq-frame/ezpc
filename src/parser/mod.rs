@@ -15,7 +15,7 @@ use self::modifiers::{
 
 pub trait Parse {
     type Output;
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output>;
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output>;
 }
 
 pub struct Parser<T: Parse>(T);
@@ -62,7 +62,7 @@ impl<P: Parse> Parser<P> {
     }
 
     pub fn parse(&self, source: &str) -> Result<P::Output, ParseError> {
-        self.0.parse(source.into()).and_then(|(out, rest)| {
+        self.0.apply(source.into()).and_then(|(out, rest)| {
             if rest.is_empty() {
                 Ok(out)
             } else {
@@ -73,7 +73,7 @@ impl<P: Parse> Parser<P> {
 }
 
 pub trait Match {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a>;
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a>;
 }
 
 pub struct Matcher<M: Match>(M);

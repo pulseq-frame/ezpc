@@ -36,15 +36,15 @@ where
 // Implement Parse and Match traits for the wrapped parsers / matchers
 
 impl Match for DynMatch {
-    fn parse<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        (self.0)().parse(input)
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        (self.0)().apply(input)
     }
 }
 
 impl<O: 'static> Parse for DynParse<O> {
     type Output = O;
 
-    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        (self.0)().parse(input)
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        (self.0)().apply(input)
     }
 }
