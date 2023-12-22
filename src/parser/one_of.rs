@@ -1,8 +1,5 @@
 use super::{Match, Matcher};
-use crate::{
-    input::Input,
-    result::{ParseError, ParseResult},
-};
+use crate::result::{ParseError, ParseResult};
 
 pub struct OneOf(&'static str);
 
@@ -11,8 +8,8 @@ pub fn one_of(bag: &'static str) -> Matcher<OneOf> {
 }
 
 impl Match for OneOf {
-    fn parse(&self, input: Input) -> ParseResult<()> {
-        if let Some((c, input)) = input.pop_char() {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
+        if let Some((c, input)) = pop_char(input) {
             if self.0.contains(c) {
                 Ok(((), input))
             } else {
@@ -24,4 +21,8 @@ impl Match for OneOf {
             Err(ParseError::Generic("Input is empty".into()))
         }
     }
+}
+
+fn pop_char(s: &str) -> Option<(char, &str)> {
+    s.chars().next().map(|c| (c, &s[c.len_utf8()..]))
 }

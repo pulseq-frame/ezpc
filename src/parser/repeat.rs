@@ -1,7 +1,4 @@
-use crate::{
-    input::Input,
-    result::{ParseError, ParseResult},
-};
+use crate::result::{ParseError, ParseResult};
 
 use super::{Match, Parse};
 
@@ -14,11 +11,11 @@ pub struct Repeat<T> {
 impl<T: Parse> Parse for Repeat<T> {
     type Output = Vec<T::Output>;
 
-    fn parse(&self, mut input: Input) -> ParseResult<Self::Output> {
+    fn parse<'a>(&self, mut input: &'a str) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
         for _ in 0..=self.end {
-            if let Ok((out, rest)) = self.parser_or_matcher.parse(input.clone()) {
+            if let Ok((out, rest)) = self.parser_or_matcher.parse(input) {
                 items.push(out);
                 input = rest;
             } else {
@@ -37,11 +34,11 @@ impl<T: Parse> Parse for Repeat<T> {
 }
 
 impl<T: Match> Match for Repeat<T> {
-    fn parse(&self, mut input: Input) -> ParseResult<()> {
+    fn parse<'a>(&self, mut input: &'a str) -> ParseResult<'a, ()> {
         let mut item_count = 0;
 
         for _ in 0..=self.end {
-            if let Ok(((), rest)) = self.parser_or_matcher.parse(input.clone()) {
+            if let Ok(((), rest)) = self.parser_or_matcher.parse(input) {
                 item_count += 1;
                 input = rest;
             } else {

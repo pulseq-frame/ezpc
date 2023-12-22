@@ -1,12 +1,10 @@
 use std::{error::Error, fmt::Display};
 
-use crate::input::Input;
+pub type ParseResult<'a, O> = Result<(O, &'a str), ParseError>;
 
-pub type ParseResult<O> = Result<(O, Input), ParseError>;
-
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
-    Generic(Box<dyn Error>),
+    Generic(String),
 }
 
 impl Display for ParseError {

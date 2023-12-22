@@ -1,8 +1,5 @@
 use super::{Match, Parse};
-use crate::{
-    input::Input,
-    result::{ParseError, ParseResult},
-};
+use crate::result::{ParseError, ParseResult};
 
 pub struct MapMatch<M, F> {
     pub(crate) matcher: M,
@@ -16,11 +13,12 @@ where
 {
     type Output = T;
 
-    fn parse(&self, input: Input) -> ParseResult<Self::Output> {
-        self.matcher.parse(input.clone()).and_then(|((), rest)| {
-            match (self.map_func)(rest.get_consumed(&input)) {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        self.matcher.parse(input).and_then(|((), rest)| {
+            let consumed = rest.as_ptr() as usize - input.as_ptr() as usize;
+            match (self.map_func)(&input[..consumed]) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Generic(err.into())),
+                Err(err) => Err(ParseError::Generic(err.to_string())),
             }
         })
     }
@@ -34,9 +32,9 @@ pub struct MapVal<M, O> {
 impl<M: Match, O: Clone> Parse for MapVal<M, O> {
     type Output = O;
 
-    fn parse(&self, input: Input) -> ParseResult<Self::Output> {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.matcher
-            .parse(input.clone())
+            .parse(input)
             .map(|((), rest)| (self.value.clone(), rest))
     }
 }
@@ -58,12 +56,12 @@ where
 {
     type Output = O;
 
-    fn parse(&self, input: Input) -> ParseResult<Self::Output> {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.parser
             .parse(input)
             .and_then(|(tmp, rest)| match (self.f)(tmp) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Generic(err.into())),
+                Err(err) => Err(ParseError::Generic(err.to_string())),
             })
     }
 }
@@ -84,7 +82,7 @@ where
 {
     type Output = O;
 
-    fn parse(&self, input: Input) -> ParseResult<Self::Output> {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.parser
             .parse(input)
             .map(|(tmp, rest)| ((self.f)(tmp), rest))

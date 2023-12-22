@@ -1,5 +1,5 @@
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::ParseError;
+use crate::result::{ParseError, ParseResult};
 
 pub struct List<P, M>
 where
@@ -15,7 +15,10 @@ where
     P: Parse,
     M: Match,
 {
-    Parser(List { element: element.0, separator: separator.0 })
+    Parser(List {
+        element: element.0,
+        separator: separator.0,
+    })
 }
 
 impl<P, M> Parse for List<P, M>
@@ -25,12 +28,12 @@ where
 {
     type Output = Vec<P::Output>;
 
-    fn parse(&self, input: crate::input::Input) -> crate::result::ParseResult<Self::Output> {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
         if let Ok((item, mut input)) = self.element.parse(input) {
             items.push(item);
-            while let Ok(((), rest)) = self.separator.parse(input.clone()) {
+            while let Ok(((), rest)) = self.separator.parse(input) {
                 match self.element.parse(rest) {
                     Ok((item, rest)) => {
                         items.push(item);

@@ -1,7 +1,7 @@
 use std::ops::BitOr;
 
 use super::{Match, Matcher, Parse, Parser};
-use crate::{input::Input, result::ParseResult};
+use crate::result::ParseResult;
 
 pub struct OrPP<P1: Parse, P2: Parse>(P1, P2);
 pub struct OrMM<M1: Match, M2: Match>(M1, M2);
@@ -13,8 +13,8 @@ where
 {
     type Output = P1::Output;
 
-    fn parse(&self, input: Input) -> ParseResult<Self::Output> {
-        match self.0.parse(input.clone()) {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        match self.0.parse(input) {
             Ok((out, rest)) => Ok((out, rest)),
             Err(_) => self.1.parse(input),
         }
@@ -22,8 +22,8 @@ where
 }
 
 impl<M1: Match, M2: Match> Match for OrMM<M1, M2> {
-    fn parse(&self, input: Input) -> ParseResult<()> {
-        match self.0.parse(input.clone()) {
+    fn parse<'a>(&self, input: &'a str) -> ParseResult<'a, ()> {
+        match self.0.parse(input) {
             Ok(((), rest)) => Ok(((), rest)),
             Err(_) => self.1.parse(input),
         }
