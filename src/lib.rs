@@ -3,12 +3,9 @@ mod range;
 mod result;
 
 pub use parser::{
-    call::{MatchGen, ParseGen, WrapMatcher, WrapParser},
-    is_a::is_a,
-    list::list,
-    none_of::none_of,
-    one_of::one_of,
-    tag::tag,
+    combinators::list,
+    matchers::{is_a, none_of, one_of, tag},
+    wrap::{DynMatch, DynParse, WrapMatcher, WrapParser},
     Match, Matcher, Parse, Parser,
 };
 
@@ -26,7 +23,7 @@ mod tests {
         let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
         let number = tag("-").opt() + integer() + frac.opt() + exp.opt();
 
-        number.convert(f64::from_str)
+        number.try_map(f64::from_str)
     }
 
     #[test]

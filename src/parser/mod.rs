@@ -1,25 +1,15 @@
-pub mod add;
-pub mod call;
-pub mod convert;
-pub mod is_a;
-pub mod list;
-pub mod none_of;
-pub mod one_of;
-pub mod opt;
-pub mod or;
-pub mod repeat;
-pub mod tag;
+pub mod combinators;
+pub mod combine_ops;
+pub mod matchers;
+pub mod modifiers;
+pub mod wrap;
 
 use crate::{
     range::RangeArgument,
     result::{MatchResult, ParseError, ParseResult},
 };
-use opt::Opt;
 
-use self::{
-    convert::{Convert, Map, MapMatch, MapVal},
-    repeat::Repeat,
-};
+use self::modifiers::{MapMatch, MapParse, Opt, Repeat, TryMapParse, ValMatch};
 
 pub trait Parse {
     type Output;
@@ -41,19 +31,25 @@ impl<T: Parse> Parser<T> {
         Parser(Opt(self.0))
     }
 
-    pub fn convert<F, O, E>(self, f: F) -> Parser<Convert<T, F, O, E>>
+    pub fn map<F, O>(self, f: F) -> Parser<MapParse<T, F>>
+    where
+        F: Fn(T::Output) -> O + 'static,
+    {
+        Parser(MapParse {
+            parser: self.0,
+            map_func: f,
+        })
+    }
+
+    pub fn try_map<F, O, E>(self, f: F) -> Parser<TryMapParse<T, F>>
     where
         F: Fn(T::Output) -> Result<O, E> + 'static,
         E: std::error::Error + 'static,
     {
-        Parser(Convert { parser: self.0, f })
-    }
-
-    pub fn map<F, O>(self, f: F) -> Parser<Map<T, F, O>>
-    where
-        F: Fn(T::Output) -> O + 'static,
-    {
-        Parser(Map { parser: self.0, f })
+        Parser(TryMapParse {
+            parser: self.0,
+            map_func: f,
+        })
     }
 
     pub fn parse(&self, source: &str) -> Result<T::Output, ParseError> {
@@ -86,14 +82,14 @@ impl<M: Match> Matcher<M> {
         Matcher(Opt(self.0))
     }
 
-    pub fn val<O: Clone>(self, value: O) -> Parser<MapVal<M, O>> {
-        Parser(MapVal {
+    pub fn val<O: Clone>(self, value: O) -> Parser<ValMatch<M, O>> {
+        Parser(ValMatch {
             matcher: self.0,
             value,
         })
     }
 
-    pub fn convert<F, T, E>(self, f: F) -> Parser<MapMatch<M, F>>
+    pub fn try_map<F, T, E>(self, f: F) -> Parser<MapMatch<M, F>>
     where
         F: Fn(&str) -> Result<T, E>,
         E: std::error::Error + 'static,

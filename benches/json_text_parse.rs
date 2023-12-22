@@ -20,7 +20,7 @@ fn number() -> Parser<impl Parse<Output = f64>> {
     let frac = tag(".") + one_of("0123456789").repeat(1..);
     let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
     let number = tag("-").opt() + integer + frac.opt() + exp.opt();
-    number.convert(f64::from_str)
+    number.try_map(f64::from_str)
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
@@ -33,13 +33,13 @@ fn string() -> Parser<impl Parse<Output = String>> {
         | tag("r").val('\r')
         | tag("t").val('\t');
     let escape_sequence = tag("\\") + special_char;
-    let char_string = (none_of("\\\"").convert(char::from_str) | escape_sequence)
+    let char_string = (none_of("\\\"").try_map(char::from_str) | escape_sequence)
         .repeat(1..)
         .map(|cs| cs.into_iter().collect::<String>());
     let utf16_char = tag("\\u")
         + is_a(|c| c.is_ascii_hexdigit())
             .repeat(4)
-            .convert(|digits| u16::from_str_radix(&digits, 16));
+            .try_map(|digits| u16::from_str_radix(&digits, 16));
     let utf16_string = utf16_char.repeat(1..).map(|chars| {
         std::char::decode_utf16(chars)
             .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
