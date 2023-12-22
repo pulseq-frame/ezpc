@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 use text_parse::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum JsonValue {
     Null,
     Bool(bool),
@@ -53,7 +53,7 @@ fn string() -> Parser<impl Parse<Output = String>> {
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
     let elems = list(value.wrap(), tag(",") + space());
-    tag("[b'[']") + space() + elems + tag("]")
+    tag("[") + space() + elems + tag("]")
 }
 
 fn object() -> Parser<impl Parse<Output = HashMap<String, JsonValue>>> {
@@ -78,13 +78,12 @@ pub fn json() -> Parser<impl Parse<Output = JsonValue>> {
     space() + value()
 }
 
-
 #[cfg(test)]
 mod tests {
     #[test]
     fn parse_json() {
         let input = std::fs::read_to_string("assets/data.json").unwrap();
+        println!("{:#?}", super::json().parse(&input));
         assert!(super::json().parse(&input).is_ok());
     }
 }
-
