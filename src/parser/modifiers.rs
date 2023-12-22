@@ -58,9 +58,10 @@ impl<T: Parse> Parse for Repeat<T> {
         }
 
         if items.len() < self.start {
-            Err(ParseError::Generic(
-                "Parser didn't apply often enough".into(),
-            ))
+            Err(ParseError::Repeat {
+                min: self.start,
+                count: items.len(),
+            })
         } else {
             Ok((items, input))
         }
@@ -93,9 +94,10 @@ impl<T: Match> Match for Repeat<T> {
         }
 
         if item_count < self.start {
-            Err(ParseError::Generic(
-                "Parser didn't apply often enough".into(),
-            ))
+            Err(ParseError::Repeat {
+                min: self.start,
+                count: item_count,
+            })
         } else {
             Ok(input)
         }
@@ -171,7 +173,7 @@ where
             .apply(input)
             .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Generic(err.to_string())),
+                Err(err) => Err(ParseError::Boxed(err.into())),
             })
     }
 }
@@ -189,7 +191,7 @@ where
             .apply(input)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Generic(err.to_string())),
+                Err(err) => Err(ParseError::Boxed(err.into())),
             })
     }
 }

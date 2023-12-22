@@ -28,9 +28,9 @@ mod tests {
 
     #[test]
     fn parse_numbers() {
-        assert!(number().parse_all("0.972") == Ok(0.972));
-        assert!(number().parse_all("-12") == Ok(-12.0));
-        assert!(number().parse_all("8.12e-3") == Ok(8.12e-3));
-        assert!(number().parse_all("1E2") == Ok(1E2));
+        assert!(number().parse_all("0.972").unwrap() == 0.972);
+        assert!(number().parse_all("-12").unwrap() == -12.0);
+        assert!(number().parse_all("8.12e-3").unwrap() == 8.12e-3);
+        assert!(number().parse_all("1E2").unwrap() == 1E2);
     }
 }

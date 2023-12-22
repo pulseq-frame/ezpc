@@ -44,9 +44,7 @@ where
             }
             Ok((items, input))
         } else {
-            Err(ParseError::Generic(
-                "List should match at least one element".into(),
-            ))
+            Err(ParseError::List)
         }
     }
 }

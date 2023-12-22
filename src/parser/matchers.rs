@@ -31,7 +31,7 @@ impl Match for Tag {
         if input.starts_with(self.0) {
             Ok(&input[self.0.len()..])
         } else {
-            Err(ParseError::Generic("tag not found".into()))
+            Err(ParseError::Tag(self.0))
         }
     }
 }
@@ -42,12 +42,10 @@ impl Match for OneOf {
             if self.0.contains(c) {
                 Ok(input)
             } else {
-                Err(ParseError::Generic(
-                    "none of the expected characters found".into(),
-                ))
+                Err(ParseError::OneOf(self.0))
             }
         } else {
-            Err(ParseError::Generic("Input is empty".into()))
+            Err(ParseError::Eof)
         }
     }
 }
@@ -56,14 +54,12 @@ impl Match for NoneOf {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if self.0.contains(c) {
-                Err(ParseError::Generic(
-                    "one of the expected characters found".into(),
-                ))
+                Err(ParseError::NoneOf(self.0))
             } else {
                 Ok(rest)
             }
         } else {
-            Err(ParseError::Generic("Input is empty".into()))
+            Err(ParseError::Eof)
         }
     }
 }
@@ -77,10 +73,10 @@ where
             if (self.0)(c) {
                 Ok(rest)
             } else {
-                Err(ParseError::Generic("Predicate didn't apply".into()))
+                Err(ParseError::IsA)
             }
         } else {
-            Err(ParseError::Generic("Input is empty".into()))
+            Err(ParseError::Eof)
         }
     }
 }

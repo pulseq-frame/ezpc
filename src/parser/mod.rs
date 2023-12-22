@@ -23,7 +23,7 @@ impl<P: Parse> Parser<P> {
             if rest.is_empty() {
                 Ok(out)
             } else {
-                Err(ParseError::Generic("Didn't parse to EOF".into()))
+                Err(ParseError::Incomplete)
             }
         })
     }
@@ -81,7 +81,7 @@ impl<M: Match> Matcher<M> {
             if rest.is_empty() {
                 Ok(())
             } else {
-                Err(ParseError::Generic("Didn't match to EOF".into()))
+                Err(ParseError::Incomplete)
             }
         })
     }
