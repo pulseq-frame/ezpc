@@ -1,5 +1,5 @@
 use std::{collections::HashMap, str::FromStr};
-use text_parse::*;
+use ezpc::*;
 
 #[derive(Clone, Debug)]
 pub enum JsonValue {

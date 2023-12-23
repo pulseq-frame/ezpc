@@ -1,7 +1,8 @@
 [package]
-name = "text-parse"
+name = "ezpc"
 version = "0.1.0"
 edition = "2021"
+description = "EaZy Parser Combinator"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

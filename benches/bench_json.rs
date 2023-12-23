@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 mod json_pom;
-mod json_text_parse;
+mod json_ezpc;
 
 fn json(c: &mut Criterion) {
     let input = std::fs::read_to_string("assets/data.json").unwrap();
@@ -15,7 +15,7 @@ fn json(c: &mut Criterion) {
 
     group.bench_function("text-parse", |b| {
         b.iter(|| {
-            json_text_parse::json().parse_all(black_box(&input)).ok();
+            json_ezpc::json().parse_all(black_box(&input)).ok();
         })
     });
 
