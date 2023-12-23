@@ -16,7 +16,7 @@ fn space() -> Matcher<impl Match> {
 }
 
 fn number() -> Parser<impl Parse<Output = f64>> {
-    let integer = one_of("123456789") + one_of("0123456789").repeat(0..) | tag("0");
+    let integer = (one_of("123456789") + one_of("0123456789").repeat(0..)) | tag("0");
     let frac = tag(".") + one_of("0123456789").repeat(1..);
     let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
     let number = tag("-").opt() + integer + frac.opt() + exp.opt();
@@ -39,7 +39,7 @@ fn string() -> Parser<impl Parse<Output = String>> {
     let utf16_char = tag("\\u")
         + is_a(|c| c.is_ascii_hexdigit())
             .repeat(4)
-            .try_map(|digits| u16::from_str_radix(&digits, 16));
+            .try_map(|digits| u16::from_str_radix(digits, 16));
     let utf16_string = utf16_char.repeat(1..).map(|chars| {
         std::char::decode_utf16(chars)
             .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
@@ -65,10 +65,10 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
     (tag("null").val(JsonValue::Null)
         | tag("true").val(JsonValue::Bool(true))
         | tag("false").val(JsonValue::Bool(false))
-        | number().map(|num| JsonValue::Num(num))
-        | string().map(|text| JsonValue::Str(text))
-        | array().map(|arr| JsonValue::Array(arr))
-        | object().map(|obj| JsonValue::Object(obj)))
+        | number().map(JsonValue::Num)
+        | string().map(JsonValue::Str)
+        | array().map(JsonValue::Array)
+        | object().map(JsonValue::Object))
         + space()
 }
 

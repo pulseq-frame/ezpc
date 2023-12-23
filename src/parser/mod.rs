@@ -19,7 +19,7 @@ pub struct Parser<T: Parse>(T);
 
 impl<P: Parse> Parser<P> {
     pub fn parse_all(&self, source: &str) -> Result<P::Output, ParseError> {
-        self.0.apply(source.into()).and_then(|(out, rest)| {
+        self.0.apply(source).and_then(|(out, rest)| {
             if rest.is_empty() {
                 Ok(out)
             } else {
@@ -77,7 +77,7 @@ pub struct Matcher<M: Match>(M);
 
 impl<M: Match> Matcher<M> {
     pub fn match_all(&self, source: &str) -> Result<(), ParseError> {
-        self.0.apply(source.into()).and_then(|rest| {
+        self.0.apply(source).and_then(|rest| {
             if rest.is_empty() {
                 Ok(())
             } else {

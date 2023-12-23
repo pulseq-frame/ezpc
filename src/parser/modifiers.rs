@@ -106,7 +106,7 @@ impl<T: Match> Match for Repeat<T> {
 
 impl<T: Match> Match for Opt<T> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        self.0.apply(input).map_or(Ok(input), |rest| Ok(rest))
+        Ok(self.0.apply(input).unwrap_or(input))
     }
 }
 

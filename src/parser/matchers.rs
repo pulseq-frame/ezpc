@@ -28,8 +28,8 @@ where
 
 impl Match for Tag {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        if input.starts_with(self.0) {
-            Ok(&input[self.0.len()..])
+        if let Some(rest) = input.strip_prefix(self.0) {
+            Ok(rest)
         } else {
             Err(ParseError::Tag(self.0))
         }
