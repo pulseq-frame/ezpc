@@ -4,7 +4,7 @@ mod result;
 
 pub use parser::{
     combinators::list,
-    matchers::{is_a, none_of, one_of, tag},
+    matchers::{eof, is_a, none_of, one_of, tag},
     wrap::{DynMatch, DynParse, WrapMatcher, WrapParser},
     Match, Matcher, Parse, Parser,
 };

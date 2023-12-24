@@ -13,7 +13,8 @@ pub enum ParseError {
     List,
     Repeat { min: usize, count: usize },
     Boxed(Box<dyn Error>),
-    Eof,
+    UnexpectedEof,
+    ExpectedEof,
     Incomplete,
 }
 
@@ -29,7 +30,8 @@ impl Display for ParseError {
                 write!(f, "Repeat: Parser applied {count} times, minimum was {min}")
             }
             ParseError::Boxed(err) => err.fmt(f),
-            ParseError::Eof => write!(f, "EOF: Reached end of input"),
+            ParseError::UnexpectedEof => write!(f, "UnexpectedEof: Tried to read at end of input"),
+            ParseError::ExpectedEof => write!(f, "ExpectedEof: Expected end of input"),
             ParseError::Incomplete => write!(f, "Incomplete: Didn't parse until EOF"),
         }
     }

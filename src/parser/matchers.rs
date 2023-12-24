@@ -1,6 +1,11 @@
 use super::{Match, Matcher};
 use crate::result::{MatchResult, ParseError};
 
+pub struct Eof;
+pub fn eof() -> Matcher<Eof> {
+    Matcher(Eof)
+}
+
 pub struct Tag(&'static str);
 pub fn tag(tag: &'static str) -> Matcher<Tag> {
     Matcher(Tag(tag))
@@ -26,6 +31,16 @@ where
 
 // All the Match implementations for the Matchers above
 
+impl Match for Eof {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        if input.is_empty() {
+            Ok(input)
+        } else {
+            Err(ParseError::Incomplete)
+        }
+    }
+}
+
 impl Match for Tag {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some(rest) = input.strip_prefix(self.0) {
@@ -45,7 +60,7 @@ impl Match for OneOf {
                 Err(ParseError::OneOf(self.0))
             }
         } else {
-            Err(ParseError::Eof)
+            Err(ParseError::UnexpectedEof)
         }
     }
 }
@@ -59,7 +74,7 @@ impl Match for NoneOf {
                 Ok(rest)
             }
         } else {
-            Err(ParseError::Eof)
+            Err(ParseError::UnexpectedEof)
         }
     }
 }
@@ -76,7 +91,7 @@ where
                 Err(ParseError::IsA)
             }
         } else {
-            Err(ParseError::Eof)
+            Err(ParseError::UnexpectedEof)
         }
     }
 }
