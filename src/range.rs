@@ -38,6 +38,6 @@ impl RangeArgument for usize {
         *self
     }
     fn end(&self) -> usize {
-        *self
+        *self - 1
     }
 }
