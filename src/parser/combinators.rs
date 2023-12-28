@@ -28,23 +28,33 @@ where
 {
     type Output = Vec<P::Output>;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
-        if let Ok((item, mut input)) = self.element.apply(input) {
-            items.push(item);
-            while let Ok(rest) = self.separator.apply(input) {
-                match self.element.apply(rest) {
-                    Ok((item, rest)) => {
-                        items.push(item);
-                        input = rest;
+        match self.element.apply(input, depth) {
+            Ok((item, mut input)) => {
+                items.push(item);
+                // TODO: the separator might return a fatal error which we should handle?
+                // But this would be strange since the separator should be simple (no recursion error)
+                // and not expected, as it is optional (list has arbitrary length)
+                while let Ok(rest) = self.separator.apply(input, depth) {
+                    match self.element.apply(rest, depth) {
+                        Ok((item, rest)) => {
+                            items.push(item);
+                            input = rest;
+                        }
+                        Err(err) => match err {
+                            ParseError::RecursionDepth(_) => return Err(err),
+                            _ => break,
+                        },
                     }
-                    Err(_) => break,
                 }
+                Ok((items, input))
             }
-            Ok((items, input))
-        } else {
-            Err(ParseError::List)
+            Err(err) => match err {
+                ParseError::RecursionDepth(_) => Err(err),
+                _ => Err(ParseError::List), // TODO: should this list error conain the original error?
+            },
         }
     }
 }

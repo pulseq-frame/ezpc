@@ -12,14 +12,14 @@ use modifiers::{MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMa
 
 pub trait Parse {
     type Output;
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output>;
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output>;
 }
 
 pub struct Parser<T: Parse>(T);
 
 impl<P: Parse> Parser<P> {
     pub fn parse_all(&self, source: &str) -> Result<P::Output, ParseError> {
-        self.0.apply(source).and_then(|(out, rest)| {
+        self.0.apply(source, 0).and_then(|(out, rest)| {
             if rest.is_empty() {
                 Ok(out)
             } else {
@@ -70,14 +70,14 @@ impl<P: Parse> Parser<P> {
 }
 
 pub trait Match {
-    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a>;
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> MatchResult<'a>;
 }
 
 pub struct Matcher<M: Match>(M);
 
 impl<M: Match> Matcher<M> {
     pub fn match_all(&self, source: &str) -> Result<(), ParseError> {
-        self.0.apply(source).and_then(|rest| {
+        self.0.apply(source, 0).and_then(|rest| {
             if rest.is_empty() {
                 Ok(())
             } else {

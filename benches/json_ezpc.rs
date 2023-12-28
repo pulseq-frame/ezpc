@@ -1,5 +1,5 @@
-use std::{collections::HashMap, str::FromStr};
 use ezpc::*;
+use std::{collections::HashMap, str::FromStr};
 
 #[derive(Clone, Debug)]
 pub enum JsonValue {
@@ -50,12 +50,12 @@ fn string() -> Parser<impl Parse<Output = String>> {
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    let elems = list(value.wrap(), tag(",") + space());
+    let elems = list(value.wrap(100), tag(",") + space());
     tag("[") + space() + elems + tag("]")
 }
 
 fn object() -> Parser<impl Parse<Output = HashMap<String, JsonValue>>> {
-    let member = string() + space() + tag(":") + space() + value.wrap();
+    let member = string() + space() + tag(":") + space() + value.wrap(100);
     let members = list(member, tag(",") + space());
     let obj = tag("{") + space() + members + tag("}");
     obj.map(|members| members.into_iter().collect::<HashMap<_, _>>())

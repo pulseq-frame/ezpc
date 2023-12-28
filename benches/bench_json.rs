@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-mod json_pom;
 mod json_ezpc;
+mod json_pom;
 
 fn json(c: &mut Criterion) {
     let input = std::fs::read_to_string("assets/data.json").unwrap();

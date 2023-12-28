@@ -45,15 +45,19 @@ pub struct TryMapParse<P, F> {
 impl<T: Parse> Parse for Repeat<T> {
     type Output = Vec<T::Output>;
 
-    fn apply<'a>(&self, mut input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, mut input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
         for _ in 0..=self.end {
-            if let Ok((out, rest)) = self.parser_or_matcher.apply(input) {
-                items.push(out);
-                input = rest;
-            } else {
-                break;
+            match self.parser_or_matcher.apply(input, depth) {
+                Ok((out, rest)) => {
+                    items.push(out);
+                    input = rest;
+                }
+                Err(err) => match err {
+                    ParseError::RecursionDepth(_) => return Err(err),
+                    _ => break,
+                },
             }
         }
 
@@ -71,25 +75,33 @@ impl<T: Parse> Parse for Repeat<T> {
 impl<T: Parse> Parse for Opt<T> {
     type Output = Option<T::Output>;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        self.0
-            .apply(input)
-            .map_or(Ok((None, input)), |(out, rest)| Ok((Some(out), rest)))
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
+        match self.0.apply(input, depth) {
+            Ok((out, rest)) => Ok((Some(out), rest)),
+            Err(err) => match err {
+                ParseError::RecursionDepth(_) => Err(err),
+                _ => Ok((None, input)),
+            },
+        }
     }
 }
 
 // Implementations for modified Matchers
 
 impl<T: Match> Match for Repeat<T> {
-    fn apply<'a>(&self, mut input: &'a str) -> MatchResult<'a> {
+    fn apply<'a>(&self, mut input: &'a str, depth: usize) -> MatchResult<'a> {
         let mut item_count = 0;
 
         for _ in 0..=self.end {
-            if let Ok(rest) = self.parser_or_matcher.apply(input) {
-                item_count += 1;
-                input = rest;
-            } else {
-                break;
+            match self.parser_or_matcher.apply(input, depth) {
+                Ok(rest) => {
+                    item_count += 1;
+                    input = rest;
+                }
+                Err(err) => match err {
+                    ParseError::RecursionDepth(_) => return Err(err),
+                    _ => break,
+                },
             }
         }
 
@@ -105,8 +117,14 @@ impl<T: Match> Match for Repeat<T> {
 }
 
 impl<T: Match> Match for Opt<T> {
-    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        Ok(self.0.apply(input).unwrap_or(input))
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> MatchResult<'a> {
+        match self.0.apply(input, depth) {
+            Ok(rest) => Ok(rest),
+            Err(err) => match err {
+                ParseError::RecursionDepth(_) => Err(err),
+                _ => Ok(input),
+            },
+        }
     }
 }
 
@@ -115,9 +133,9 @@ impl<T: Match> Match for Opt<T> {
 impl<M: Match, T: Clone> Parse for ValMatch<M, T> {
     type Output = T;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         self.matcher
-            .apply(input)
+            .apply(input, depth)
             .map(|rest| (self.value.clone(), rest))
     }
 }
@@ -125,9 +143,9 @@ impl<M: Match, T: Clone> Parse for ValMatch<M, T> {
 impl<P: Parse, T: Clone> Parse for ValParse<P, T> {
     type Output = T;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         self.parser
-            .apply(input)
+            .apply(input, depth)
             .map(|(_, rest)| (self.value.clone(), rest))
     }
 }
@@ -139,9 +157,9 @@ where
 {
     type Output = O;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         self.matcher
-            .apply(input)
+            .apply(input, depth)
             .map(|rest| ((self.map_func)(consumed(input, rest)), rest))
     }
 }
@@ -153,9 +171,9 @@ where
 {
     type Output = O;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         self.parser
-            .apply(input)
+            .apply(input, depth)
             .map(|(tmp, rest)| ((self.map_func)(tmp), rest))
     }
 }
@@ -168,13 +186,13 @@ where
 {
     type Output = O;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        self.matcher
-            .apply(input)
-            .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
+        self.matcher.apply(input, depth).and_then(|rest| {
+            match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
                 Err(err) => Err(ParseError::Boxed(err.into())),
-            })
+            }
+        })
     }
 }
 
@@ -186,9 +204,9 @@ where
 {
     type Output = O;
 
-    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
         self.parser
-            .apply(input)
+            .apply(input, depth)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
                 Err(err) => Err(ParseError::Boxed(err.into())),

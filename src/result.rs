@@ -16,14 +16,15 @@ pub enum ParseError {
     UnexpectedEof,
     ExpectedEof,
     Incomplete,
+    RecursionDepth(usize),
 }
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseError::Tag(tag) => write!(f, "Tag(\"{tag}\"): not found"),
-            ParseError::OneOf(bag) => write!(f, "OneOf(\"{bag}\"): nothing matched"),
-            ParseError::NoneOf(bag) => write!(f, "NoneOf(\"{bag}\"): something matched"),
+            ParseError::Tag(tag) => write!(f, "Tag({tag:?}): not found"),
+            ParseError::OneOf(bag) => write!(f, "OneOf({bag:?}): nothing matched"),
+            ParseError::NoneOf(bag) => write!(f, "NoneOf({bag:?}): something matched"),
             ParseError::IsA => write!(f, "IsA: Predicate didn't apply"),
             ParseError::List => write!(f, "List: element parser didn't apply"),
             ParseError::Repeat { min, count } => {
@@ -33,6 +34,9 @@ impl Display for ParseError {
             ParseError::UnexpectedEof => write!(f, "UnexpectedEof: Tried to read at end of input"),
             ParseError::ExpectedEof => write!(f, "ExpectedEof: Expected end of input"),
             ParseError::Incomplete => write!(f, "Incomplete: Didn't parse until EOF"),
+            ParseError::RecursionDepth(depth) => {
+                write!(f, "RecursionDepth({depth}): Nested too deep")
+            }
         }
     }
 }
