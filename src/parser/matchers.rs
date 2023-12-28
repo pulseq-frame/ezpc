@@ -34,8 +34,10 @@ where
 impl Match for Eof {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if input.is_empty() {
+            log::trace!("MATCH! {input:.10?} - Eof");
             Ok(input)
         } else {
+            log::trace!("failed {input:.10?} - Eof");
             Err(ParseError::Incomplete)
         }
     }
@@ -44,8 +46,10 @@ impl Match for Eof {
 impl Match for Tag {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some(rest) = input.strip_prefix(self.0) {
+            log::trace!("MATCH! {input:.10?} - Tag({:?})", self.0);
             Ok(rest)
         } else {
+            log::trace!("failed {input:.10?} - Tag({:?})", self.0);
             Err(ParseError::Tag(self.0))
         }
     }
@@ -55,11 +59,14 @@ impl Match for OneOf {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, input)) = pop_char(input) {
             if self.0.contains(c) {
+                log::trace!("MATCH! {input:.10?} - OneOf({:?})", self.0);
                 Ok(input)
             } else {
+                log::trace!("failed {input:.10?} - OneOf({:?})", self.0);
                 Err(ParseError::OneOf(self.0))
             }
         } else {
+            log::trace!("failed {input:.10?} - OneOf({:?})", self.0);
             Err(ParseError::UnexpectedEof)
         }
     }
@@ -69,11 +76,14 @@ impl Match for NoneOf {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if self.0.contains(c) {
+                log::trace!("failed {input:.10?} - NoneOf({:?})", self.0);
                 Err(ParseError::NoneOf(self.0))
             } else {
+                log::trace!("MATCH! {input:.10?} - NoneOf({:?})", self.0);
                 Ok(rest)
             }
         } else {
+            log::trace!("failed {input:.10?} - NoneOf({:?})", self.0);
             Err(ParseError::UnexpectedEof)
         }
     }
@@ -86,11 +96,14 @@ where
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if (self.0)(c) {
+                log::trace!("MATCH! {input:.10?} - IsA");
                 Ok(rest)
             } else {
+                log::trace!("failed {input:.10?} - IsA");
                 Err(ParseError::IsA)
             }
         } else {
+            log::trace!("failed {input:.10?} - IsA");
             Err(ParseError::UnexpectedEof)
         }
     }
