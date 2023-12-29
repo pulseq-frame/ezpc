@@ -6,7 +6,7 @@ pub mod wrap;
 
 use crate::{
     range::RangeArgument,
-    result::{MatchResult, ParseError, ParseResult},
+    result::{MatchResult, ParseError, ParseResult, MatcherError},
 };
 use modifiers::{MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse};
 
@@ -23,7 +23,7 @@ impl<P: Parse> Parser<P> {
             if rest.is_empty() {
                 Ok(out)
             } else {
-                Err(ParseError::Incomplete)
+                Err(ParseError::Mismatch(MatcherError::Eof))
             }
         })
     }
@@ -81,7 +81,7 @@ impl<M: Match> Matcher<M> {
             if rest.is_empty() {
                 Ok(())
             } else {
-                Err(ParseError::Incomplete)
+                Err(ParseError::Mismatch(MatcherError::Eof))
             }
         })
     }

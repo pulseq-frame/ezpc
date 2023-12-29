@@ -1,5 +1,5 @@
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::{ParseError, ParseResult};
+use crate::result::{ParseError, ParseResult, MatcherError};
 
 pub struct List<P, M>
 where
@@ -53,7 +53,7 @@ where
             }
             Err(err) => match err {
                 ParseError::RecursionDepth(_) => Err(err),
-                _ => Err(ParseError::List), // TODO: should this list error conain the original error?
+                _ => Err(ParseError::Mismatch(MatcherError::List)),
             },
         }
     }

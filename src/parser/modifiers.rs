@@ -1,4 +1,4 @@
-use crate::result::{MatchResult, ParseError, ParseResult};
+use crate::result::{MatchResult, MatcherError, ParseError, ParseResult};
 
 use super::{Match, Parse};
 
@@ -62,10 +62,10 @@ impl<T: Parse> Parse for Repeat<T> {
         }
 
         if items.len() < self.start {
-            Err(ParseError::Repeat {
+            Err(ParseError::Mismatch(MatcherError::Repeat {
                 min: self.start,
                 count: items.len(),
-            })
+            }))
         } else {
             Ok((items, input))
         }
@@ -106,10 +106,10 @@ impl<T: Match> Match for Repeat<T> {
         }
 
         if item_count < self.start {
-            Err(ParseError::Repeat {
+            Err(ParseError::Mismatch(MatcherError::Repeat {
                 min: self.start,
                 count: item_count,
-            })
+            }))
         } else {
             Ok(input)
         }
@@ -190,7 +190,7 @@ where
         self.matcher.apply(input, depth).and_then(|rest| {
             match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Boxed(err.into())),
+                Err(err) => Err(ParseError::Mismatch(MatcherError::Boxed(err.into()))),
             }
         })
     }
@@ -209,7 +209,7 @@ where
             .apply(input, depth)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Boxed(err.into())),
+                Err(err) => Err(ParseError::Mismatch(MatcherError::Boxed(err.into()))),
             })
     }
 }

@@ -1,47 +1,38 @@
-use std::{error::Error, fmt::Display};
+use std::error::Error;
 use thiserror::Error;
 
 pub type ParseResult<'a, O> = Result<(O, &'a str), ParseError>;
 
 pub type MatchResult<'a> = Result<&'a str, ParseError>;
 
-// pub enum ParseError {
-
-// }
-
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ParseError {
-    Tag(&'static str),
-    OneOf(&'static str),
-    NoneOf(&'static str),
-    IsA(&'static str),
-    List,
-    Repeat { min: usize, count: usize },
-    Boxed(Box<dyn Error>),
-    ExpectedEof,
-    Incomplete,
+    #[error("Matcher didn't apply: {0}")]
+    Mismatch(MatcherError),
+    #[error("Fatal error, expected match not found: {0}")]
+    Fatal(MatcherError),
+    #[error("RecursionDepth({0}): Nested too deep")]
     RecursionDepth(usize),
 }
 
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParseError::Tag(tag) => write!(f, "Tag({tag:?}): not found"),
-            ParseError::OneOf(bag) => write!(f, "OneOf({bag:?}): nothing matched"),
-            ParseError::NoneOf(bag) => write!(f, "NoneOf({bag:?}): something matched"),
-            ParseError::IsA(descr) => write!(f, "IsA({descr}): Predicate didn't apply"),
-            ParseError::List => write!(f, "List: element parser didn't apply"),
-            ParseError::Repeat { min, count } => {
-                write!(f, "Repeat: Parser applied {count} times, minimum was {min}")
-            }
-            ParseError::Boxed(err) => err.fmt(f),
-            ParseError::ExpectedEof => write!(f, "ExpectedEof: Expected end of input"),
-            ParseError::Incomplete => write!(f, "Incomplete: Didn't parse until EOF"),
-            ParseError::RecursionDepth(depth) => {
-                write!(f, "RecursionDepth({depth}): Nested too deep")
-            }
-        }
-    }
+#[derive(Debug, Error)]
+pub enum MatcherError {
+    #[error("Tag({0:?}): not found")]
+    Tag(&'static str),
+    #[error("OneOf({0:?}): nothing matched")]
+    OneOf(&'static str),
+    #[error("NoneOf({0:?}): something matched")]
+    NoneOf(&'static str),
+    #[error("IsA({0}): Predicate didn't apply")]
+    IsA(&'static str),
+    #[error("List: element parser didn't apply")]
+    List,
+    #[error("Repeat: Parser applied {count} times, minimum was {min}")]
+    Repeat { min: usize, count: usize },
+    #[error("{0}")]
+    Boxed(Box<dyn Error>),
+    #[error("Eof: Expected end of input")]
+    Eof,
 }
 
-impl Error for ParseError {}
+// TODO: Repeat and List should contain the original error code

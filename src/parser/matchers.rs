@@ -1,5 +1,5 @@
 use super::{Match, Matcher};
-use crate::result::{MatchResult, ParseError};
+use crate::result::{MatchResult, MatcherError, ParseError};
 
 pub struct Eof;
 pub fn eof() -> Matcher<Eof> {
@@ -44,7 +44,7 @@ impl Match for Eof {
             Ok(input)
         } else {
             log::trace!("failed {} - Eof", log_input(input));
-            Err(ParseError::Incomplete)
+            Err(ParseError::Mismatch(MatcherError::Eof))
         }
     }
 }
@@ -56,7 +56,7 @@ impl Match for Tag {
             Ok(rest)
         } else {
             log::trace!("failed {} - Tag({:?})", log_input(input), self.0);
-            Err(ParseError::Tag(self.0))
+            Err(ParseError::Mismatch(MatcherError::Tag(self.0)))
         }
     }
 }
@@ -70,7 +70,7 @@ impl Match for OneOf {
             }
         }
         log::trace!("failed {} - OneOf({:?})", log_input(input), self.0);
-        Err(ParseError::OneOf(self.0))
+        Err(ParseError::Mismatch(MatcherError::OneOf(self.0)))
     }
 }
 
@@ -83,7 +83,7 @@ impl Match for NoneOf {
             }
         }
         log::trace!("failed {} - NoneOf({:?})", log_input(input), self.0);
-        Err(ParseError::NoneOf(self.0))
+        Err(ParseError::Mismatch(MatcherError::NoneOf(self.0)))
     }
 }
 
@@ -99,7 +99,7 @@ where
             }
         }
         log::trace!("failed {} - IsA", log_input(input));
-        Err(ParseError::IsA(self.description))
+        Err(ParseError::Mismatch(MatcherError::IsA(self.description)))
     }
 }
 
