@@ -5,9 +5,12 @@ mod json_parser;
 use std::fs;
 
 use self::json_parser::json;
+use std::io::Write;
 
-fn init() {
-    let _ = env_logger::builder().is_test(false).try_init();
+#[test]
+/// Print the automatically generated description of the json parser
+fn print_parser() {
+    println!("{}", json());
 }
 
 #[test]
@@ -33,6 +36,7 @@ fn test_suite_y() {
 /// Parse all files that should succeed
 fn test_suite_n() {
     let paths = fs::read_dir("src/tests/JSONTestSuite/test_parsing").unwrap();
+    let mut error_file = fs::File::create("src/tests/output.txt").unwrap();
 
     for path in paths {
         let path = path.unwrap();
@@ -42,10 +46,10 @@ fn test_suite_n() {
             // Some files contain invalid utf8, which are ignored
             if let Ok(source) = std::str::from_utf8(&source) {
                 println!("{name}");
-                assert!(
-                    json().parse_all(&source).is_err(),
-                    "Parsed despite having errors '{name}'"
-                );
+                match json().parse_all(&source) {
+                    Ok(_) => panic!("Parsed despite having errors '{name}'"),
+                    Err(err) => writeln!(error_file, "{name:64}- {err}").unwrap(),
+                }
             }
         }
     }
@@ -73,6 +77,7 @@ fn test_suite_i() {
 // TODO: all files that throw an error should have good error messages
 // #[test]
 // fn test_single_file() {
+//     let _ = env_logger::builder().is_test(false).try_init();
 //     init();
 //     let source = include_str!("JSONTestSuite/test_parsing/n_structure_100000_opening_arrays.json");
 //     json().parse_all(source).unwrap();

@@ -1,5 +1,7 @@
+use std::fmt::Display;
+
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::{ParseError, ParseResult, MatcherError};
+use crate::result::{MatcherError, ParseError, ParseResult};
 
 pub struct List<P, M>
 where
@@ -56,5 +58,15 @@ where
                 _ => Err(ParseError::Mismatch(MatcherError::List)),
             },
         }
+    }
+}
+
+impl<P, M> Display for List<P, M>
+where
+    P: Parse,
+    M: Match,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "List({}, {}", self.element, self.separator)
     }
 }

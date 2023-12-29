@@ -4,18 +4,26 @@ pub mod matchers;
 pub mod modifiers;
 pub mod wrap;
 
+use std::fmt::Display;
+
 use crate::{
     range::RangeArgument,
     result::{MatchResult, ParseError, ParseResult, MatcherError},
 };
 use modifiers::{MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse};
 
-pub trait Parse {
+pub trait Parse: Display {
     type Output;
     fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output>;
 }
 
 pub struct Parser<T: Parse>(T);
+
+impl<T: Parse> Display for Parser<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<P: Parse> Parser<P> {
     pub fn parse_all(&self, source: &str) -> Result<P::Output, ParseError> {
@@ -69,11 +77,17 @@ impl<P: Parse> Parser<P> {
     }
 }
 
-pub trait Match {
+pub trait Match: Display {
     fn apply<'a>(&self, input: &'a str, depth: usize) -> MatchResult<'a>;
 }
 
 pub struct Matcher<M: Match>(M);
+
+impl<T: Match> Display for Matcher<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<M: Match> Matcher<M> {
     pub fn match_all(&self, source: &str) -> Result<(), ParseError> {

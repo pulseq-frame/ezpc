@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::result::{MatchResult, MatcherError, ParseError, ParseResult};
 
 use super::{Match, Parse};
@@ -38,6 +40,66 @@ pub struct TryMapMatch<M, F> {
 pub struct TryMapParse<P, F> {
     pub(crate) parser: P,
     pub(crate) map_func: F,
+}
+
+// Display Implementations
+
+impl<T: Display> Display for Repeat<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.end == usize::MAX {
+            write!(f, "{}.repeat({}..)", self.parser_or_matcher, self.start)
+        } else if self.end + 1 == self.start {
+            write!(f, "{}.repeat({})", self.parser_or_matcher, self.start)
+        } else {
+            write!(
+                f,
+                "{}.repeat({}..={})",
+                self.parser_or_matcher, self.start, self.end
+            )
+        }
+    }
+}
+
+impl<T: Display> Display for Opt<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.opt()", self.0)
+    }
+}
+
+impl<M: Display, T> Display for ValMatch<M, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.val(...)", self.matcher)
+    }
+}
+
+impl<P: Display, T> Display for ValParse<P, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.val(...)", self.parser)
+    }
+}
+
+impl<M: Display, F> Display for MapMatch<M, F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.map(...)", self.matcher)
+    }
+}
+
+impl<P: Display, F> Display for MapParse<P, F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.map(...)", self.parser)
+    }
+}
+
+impl<M: Display, F> Display for TryMapMatch<M, F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.try_map(...)", self.matcher)
+    }
+}
+
+impl<P: Display, F> Display for TryMapParse<P, F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.try_map(...)", self.parser)
+    }
 }
 
 // Implementations for modified Parsers

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::{Match, Matcher};
 use crate::result::{MatchResult, MatcherError, ParseError};
 
@@ -100,6 +102,41 @@ where
         }
         log::trace!("failed {} - IsA", log_input(input));
         Err(ParseError::Mismatch(MatcherError::IsA(self.description)))
+    }
+}
+
+// Display impls for all matchers
+
+impl Display for Eof {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EOF")
+    }
+}
+
+impl Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tag({:?})", self.0)
+    }
+}
+
+impl Display for OneOf {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "OneOf({:?})", self.0)
+    }
+}
+
+impl Display for NoneOf {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NoneOf({:?})", self.0)
+    }
+}
+
+impl<F> Display for IsA<F>
+where
+    F: Fn(char) -> bool,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "IsA({})", self.description)
     }
 }
 

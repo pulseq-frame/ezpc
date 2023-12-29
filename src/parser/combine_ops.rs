@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ops::Add;
 use std::ops::BitOr;
 
@@ -142,5 +143,43 @@ impl<M1: Match, M2: Match> Match for OrMM<M1, M2> {
                 _ => self.1.apply(input, depth),
             },
         }
+    }
+}
+
+// Display impls
+
+impl<P1: Parse, P2: Parse> Display for AndPP<P1, P2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} + {})", self.0, self.1)
+    }
+}
+
+impl<P1: Parse, M2: Match> Display for AndPM<P1, M2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} + {})", self.0, self.1)
+    }
+}
+
+impl<M1: Match, P2: Parse> Display for AndMP<M1, P2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} + {})", self.0, self.1)
+    }
+}
+
+impl<M1: Match, M2: Match> Display for AndMM<M1, M2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} + {})", self.0, self.1)
+    }
+}
+
+impl<P1: Parse, P2: Parse> Display for OrPP<P1, P2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} | {})", self.0, self.1)
+    }
+}
+
+impl<M1: Match, M2: Match> Display for OrMM<M1, M2> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} | {})", self.0, self.1)
     }
 }
