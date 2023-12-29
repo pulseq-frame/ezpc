@@ -70,7 +70,10 @@ fn character() -> Parser<impl Parse<Output = char>> {
     // code points" used by UTF-16 (0xD800 to 0xDFFF) are not valid code points
     // for a single char. Rust strings are always valid unicode, so we parse
     // everything except control characters (0x0 to 0x1F) as valid char.
-    is_a(|c| !matches!(c, '\0'..='\u{1F}' | '"' | '\\')).map(|s| char::from_str(s).unwrap())
+    is_a("utf-16 codepoint", |c| {
+        !matches!(c, '\0'..='\u{1F}' | '"' | '\\')
+    })
+    .map(|s| char::from_str(s).unwrap())
         | (tag("\\") + escape())
 }
 
@@ -93,7 +96,7 @@ fn utf16_chars() -> Parser<impl Parse<Output = Vec<char>>> {
 }
 
 fn hex() -> Matcher<impl Match> {
-    digit() | is_a(|c| matches!(c, 'A'..='F')) | is_a(|c| matches!(c, 'a'..='f'))
+    digit() | is_a("[A-F]", |c| matches!(c, 'A'..='F')) | is_a("[a-f]", |c| matches!(c, 'a'..='f'))
 }
 
 fn number() -> Parser<impl Parse<Output = f64>> {
@@ -115,7 +118,7 @@ fn digit() -> Matcher<impl Match> {
 }
 
 fn onenine() -> Matcher<impl Match> {
-    is_a(|c| matches!(c, '1'..='9'))
+    is_a("[1-9]", |c| matches!(c, '1'..='9'))
 }
 
 fn fraction() -> Matcher<impl Match> {

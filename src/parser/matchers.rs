@@ -21,12 +21,18 @@ pub fn none_of(bag: &'static str) -> Matcher<NoneOf> {
     Matcher(NoneOf(bag))
 }
 
-pub struct IsA<F>(F);
-pub fn is_a<F>(predicate: F) -> Matcher<IsA<F>>
+pub struct IsA<F> {
+    predicate: F,
+    description: &'static str,
+}
+pub fn is_a<F>(description: &'static str, predicate: F) -> Matcher<IsA<F>>
 where
     F: Fn(char) -> bool,
 {
-    Matcher(IsA(predicate))
+    Matcher(IsA {
+        predicate,
+        description,
+    })
 }
 
 // All the Match implementations for the Matchers above
@@ -60,32 +66,24 @@ impl Match for OneOf {
         if let Some((c, rest)) = pop_char(input) {
             if self.0.contains(c) {
                 log::trace!("MATCH! {} - OneOf({:?})", log_input(input), self.0);
-                Ok(rest)
-            } else {
-                log::trace!("failed {} - OneOf({:?})", log_input(input), self.0);
-                Err(ParseError::OneOf(self.0))
+                return Ok(rest);
             }
-        } else {
-            log::trace!("failed {} - OneOf({:?})", log_input(input), self.0);
-            Err(ParseError::UnexpectedEof)
         }
+        log::trace!("failed {} - OneOf({:?})", log_input(input), self.0);
+        Err(ParseError::OneOf(self.0))
     }
 }
 
 impl Match for NoneOf {
     fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
-            if self.0.contains(c) {
-                log::trace!("failed {} - NoneOf({:?})", log_input(input), self.0);
-                Err(ParseError::NoneOf(self.0))
-            } else {
+            if !self.0.contains(c) {
                 log::trace!("MATCH! {} - NoneOf({:?})", log_input(input), self.0);
-                Ok(rest)
+                return Ok(rest);
             }
-        } else {
-            log::trace!("failed {} - NoneOf({:?})", log_input(input), self.0);
-            Err(ParseError::UnexpectedEof)
         }
+        log::trace!("failed {} - NoneOf({:?})", log_input(input), self.0);
+        Err(ParseError::NoneOf(self.0))
     }
 }
 
@@ -95,17 +93,13 @@ where
 {
     fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
-            if (self.0)(c) {
+            if (self.predicate)(c) {
                 log::trace!("MATCH! {} - IsA", log_input(input));
-                Ok(rest)
-            } else {
-                log::trace!("failed {} - IsA", log_input(input));
-                Err(ParseError::IsA)
+                return Ok(rest);
             }
-        } else {
-            log::trace!("failed {} - IsA", log_input(input));
-            Err(ParseError::UnexpectedEof)
         }
+        log::trace!("failed {} - IsA", log_input(input));
+        Err(ParseError::IsA(self.description))
     }
 }
 
