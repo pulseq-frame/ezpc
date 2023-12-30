@@ -11,7 +11,9 @@ use crate::{
     range::RangeArgument,
     result::{MatchResult, MatcherError, ParseError, ParseResult},
 };
-use modifiers::{MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse};
+use modifiers::{
+    MapMatch, MapParse, Named, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
+};
 
 pub trait Parse: Display {
     type Output;
@@ -34,6 +36,13 @@ impl<P: Parse> Parser<P> {
             } else {
                 Err(ParseError::Mismatch(MatcherError::Eof))
             }
+        })
+    }
+
+    pub fn name(self, name: &'static str) -> Parser<Named<P>> {
+        Parser(Named {
+            parser_or_matcher: self.0,
+            name,
         })
     }
 
@@ -98,6 +107,13 @@ impl<M: Match> Matcher<M> {
             } else {
                 Err(ParseError::Mismatch(MatcherError::Eof))
             }
+        })
+    }
+
+    pub fn name(self, name: &'static str) -> Matcher<Named<M>> {
+        Matcher(Named {
+            parser_or_matcher: self.0,
+            name,
         })
     }
 

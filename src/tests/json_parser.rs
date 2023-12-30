@@ -40,7 +40,7 @@ fn member() -> Parser<impl Parse<Output = (String, JsonValue)>> {
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    tag("[") + !((elements() + tag("]")) | (ws().val(Vec::new()) + tag("]")))
+    tag("[") + !((elements() + tag("]")) | (ws().val(Vec::new()) + tag("]"))).name("values or ']'")
 }
 
 fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
@@ -48,7 +48,7 @@ fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
 }
 
 fn element() -> Parser<impl Parse<Output = JsonValue>> {
-    ws() + !value.wrap(100) + ws()
+    ws() + !value.wrap(100).name("value") + ws()
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {

@@ -1,5 +1,5 @@
 use std::{
-    any::{Any, TypeId},
+    any::{type_name, Any, TypeId},
     cell::{Cell, OnceCell, RefCell},
     collections::HashMap,
     fmt::Display,
@@ -8,14 +8,6 @@ use std::{
 
 use super::{Match, Matcher, Parse, Parser};
 use crate::result::{MatchResult, ParseError, ParseResult};
-
-fn type_name<T>() -> &'static str {
-    let name = std::any::type_name::<T>();
-    match name.rfind("::") {
-        Some(pos) => &name[pos+2..],
-        None => name,
-    }
-}
 
 // Wrapping of Parsers. Further down, the wrapping of matchers is implemented.
 // It is not commented as it is basically the same, but the code is a bit simpler

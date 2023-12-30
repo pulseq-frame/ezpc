@@ -4,6 +4,11 @@ use crate::result::{MatchResult, MatcherError, ParseError, ParseResult};
 
 use super::{Match, Parse};
 
+pub struct Named<T> {
+    pub parser_or_matcher: T,
+    pub name: &'static str,
+}
+
 pub struct Repeat<T> {
     pub(crate) parser_or_matcher: T,
     pub(crate) start: usize,
@@ -43,6 +48,12 @@ pub struct TryMapParse<P, F> {
 }
 
 // Display Implementations
+
+impl<T: Display> Display for Named<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.name.fmt(f)
+    }
+}
 
 impl<T: Display> Display for Repeat<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -104,6 +115,14 @@ impl<P: Display, F> Display for TryMapParse<P, F> {
 
 // Implementations for modified Parsers
 
+impl<T: Parse> Parse for Named<T> {
+    type Output = T::Output;
+
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
+        self.parser_or_matcher.apply(input)
+    }
+}
+
 impl<T: Parse> Parse for Repeat<T> {
     type Output = Vec<T::Output>;
 
@@ -149,6 +168,12 @@ impl<T: Parse> Parse for Opt<T> {
 }
 
 // Implementations for modified Matchers
+
+impl<T: Match> Match for Named<T> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        self.parser_or_matcher.apply(input)
+    }
+}
 
 impl<T: Match> Match for Repeat<T> {
     fn apply<'a>(&self, mut input: &'a str) -> MatchResult<'a> {
