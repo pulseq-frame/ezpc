@@ -67,6 +67,6 @@ where
     M: Match,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "List({}, {}", self.element, self.separator)
+        write!(f, "List({}, {})", self.element, self.separator)
     }
 }

@@ -47,13 +47,13 @@ pub struct TryMapParse<P, F> {
 impl<T: Display> Display for Repeat<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.end == usize::MAX {
-            write!(f, "{}.repeat({}..)", self.parser_or_matcher, self.start)
+            write!(f, "{}*({}..)", self.parser_or_matcher, self.start)
         } else if self.end + 1 == self.start {
-            write!(f, "{}.repeat({})", self.parser_or_matcher, self.start)
+            write!(f, "{}*({})", self.parser_or_matcher, self.start)
         } else {
             write!(
                 f,
-                "{}.repeat({}..={})",
+                "{}*({}..={})",
                 self.parser_or_matcher, self.start, self.end
             )
         }
@@ -62,7 +62,7 @@ impl<T: Display> Display for Repeat<T> {
 
 impl<T: Display> Display for Opt<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.opt()", self.0)
+        write!(f, "{}?", self.0)
     }
 }
 

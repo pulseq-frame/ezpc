@@ -27,7 +27,7 @@ impl<P: Parse> Parse for FatalP<P> {
 
 impl<P: Parse> Display for FatalP<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Fatal({})", self.0)
+        write!(f, "!{}", self.0)
     }
 }
 
@@ -53,6 +53,6 @@ impl<M: Match> Match for FatalM<M> {
 
 impl<M: Match> Display for FatalM<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Fatal({})", self.0)
+        write!(f, "!{}", self.0)
     }
 }

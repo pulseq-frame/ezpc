@@ -115,19 +115,19 @@ impl Display for Eof {
 
 impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Tag({:?})", self.0)
+        write!(f, "{:?}", self.0)
     }
 }
 
 impl Display for OneOf {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "OneOf({:?})", self.0)
+        write!(f, "[{:?}]", self.0)
     }
 }
 
 impl Display for NoneOf {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "NoneOf({:?})", self.0)
+        write!(f, "[!{:?}]", self.0)
     }
 }
 

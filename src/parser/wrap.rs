@@ -1,5 +1,5 @@
 use std::{
-    any::{type_name, Any, TypeId},
+    any::{Any, TypeId},
     cell::{Cell, OnceCell, RefCell},
     collections::HashMap,
     fmt::Display,
@@ -8,6 +8,14 @@ use std::{
 
 use super::{Match, Matcher, Parse, Parser};
 use crate::result::{MatchResult, ParseError, ParseResult};
+
+fn type_name<T>() -> &'static str {
+    let name = std::any::type_name::<T>();
+    match name.rfind("::") {
+        Some(pos) => &name[pos+2..],
+        None => name,
+    }
+}
 
 // Wrapping of Parsers. Further down, the wrapping of matchers is implemented.
 // It is not commented as it is basically the same, but the code is a bit simpler
@@ -54,7 +62,7 @@ impl<O: 'static> Display for WrappedParser<O> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.parser {
             ParserRef::Strong(p) => p.get().unwrap().fmt(f),
-            ParserRef::Weak(_) => write!(f, "Recursion({})", self.name),
+            ParserRef::Weak(_) => write!(f, "<{}>", self.name),
         }
     }
 }
@@ -159,7 +167,7 @@ impl Display for WrappedMatcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.matcher {
             MatcherRef::Strong(p) => p.get().unwrap().fmt(f),
-            MatcherRef::Weak(_) => write!(f, "Recursion({})", self.name),
+            MatcherRef::Weak(_) => write!(f, "<{}>", self.name),
         }
     }
 }
