@@ -1,8 +1,8 @@
 use std::{
     any::{type_name, Any, TypeId},
-    cell::{Cell, RefCell},
+    cell::{Cell, OnceCell, RefCell},
     collections::HashMap,
-    fmt::{Display, Pointer},
+    fmt::Display,
     rc::{Rc, Weak},
 };
 
@@ -14,8 +14,8 @@ use crate::result::{MatchResult, ParseError, ParseResult};
 // because no dyn Any is needed: Matchers all have the same type, Parsers<Output = ?> have not.
 
 pub enum ParserRef<O: 'static> {
-    Strong(Rc<RefCell<Box<dyn Parse<Output = O>>>>),
-    Weak(Weak<RefCell<Box<dyn Parse<Output = O>>>>),
+    Strong(Rc<OnceCell<Box<dyn Parse<Output = O>>>>),
+    Weak(Weak<OnceCell<Box<dyn Parse<Output = O>>>>),
 }
 
 pub struct WrappedParser<O: 'static> {
@@ -43,7 +43,7 @@ impl<O: 'static> Parse for WrappedParser<O> {
         };
 
         DEPTH.with(|d| d.set(d.get() + 1));
-        let result = parser.borrow().apply(input);
+        let result = parser.get().unwrap().apply(input);
         DEPTH.with(|d| d.set(d.get() - 1));
 
         result
@@ -53,7 +53,7 @@ impl<O: 'static> Parse for WrappedParser<O> {
 impl<O: 'static> Display for WrappedParser<O> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.parser {
-            ParserRef::Strong(p) => p.fmt(f),
+            ParserRef::Strong(p) => p.get().unwrap().fmt(f),
             ParserRef::Weak(_) => write!(f, "Recursion({})", self.name),
         }
     }
@@ -71,7 +71,7 @@ where
     fn wrap(self, max_depth: usize) -> Parser<WrappedParser<O>> {
         thread_local! {
             /// The parsers have different types based on their outputs, so they are wrapped in Any:
-            /// `Box<dyn Any> contains Rc<RefCell<Box<dyn Parse<Output = ???>>>>`
+            /// `Box<dyn Any> contains Rc<OnceCell<Box<dyn Parse<Output = ???>>>>`
             static IN_PROGRESS: RefCell<HashMap<TypeId, Box<dyn Any>>> = Default::default();
         }
 
@@ -92,35 +92,27 @@ where
         }
 
         // The parser does not exist in IN_PROGRESS, so we are at the root level
-        // of the recursion. First, build a dummy that can be used in the recursion:
-        let dummy_parser: Box<dyn Parse<Output = O>> = Box::new(
-            crate::tag("dummy")
-                .map(|_| panic!("This parser should never be used!"))
-                .0,
-        );
-        let dummy = Rc::new(RefCell::new(dummy_parser));
+        // of the recursion. First, build an empty cell that can be used by the recursion:
+        let parser_ref = Rc::new(OnceCell::new());
         IN_PROGRESS.with(|in_prog| {
             in_prog
                 .borrow_mut()
-                .insert(type_id, Box::new(dummy.clone()))
+                .insert(type_id, Box::new(parser_ref.clone()))
         });
 
         // Then build the true parser itself by executing the function. When it
-        // reaches building istelf, it will use the dummy instead.
+        // reaches building istelf, it will use the still empty OnceCell.
         let parser: Box<dyn Parse<Output = O>> = Box::new(self().0);
 
         // Afterwards clean up the thread local to avoid memory leaks
         IN_PROGRESS.with(|in_prog| in_prog.borrow_mut().remove(&type_id).unwrap());
 
-        // Now we need to fix the dummies used in the recursion by replacing it
-        // with the true parser. This is why we used a RefCell, so we can do this
-        // from the outside. Alternatively, we could step recursively through
-        // the parser and swap the reference. This would remove one indirection and
-        // the need for interior mutability, but is a much more invasive implementation.
-        *(dummy.borrow_mut()) = parser;
-        // Return the fixed parser
+        // Now we actually have the parser and can initialize the OnceCell that is
+        // already being referenced by the recursion points inside of the parser.
+        parser_ref.set(parser).unwrap_or_else(|_| unreachable!());
+
         Parser(WrappedParser {
-            parser: ParserRef::Strong(dummy),
+            parser: ParserRef::Strong(parser_ref),
             max_depth,
             name: type_name::<F>(),
         })
@@ -131,8 +123,8 @@ where
 // We don't need dyn Any because all Matchers have the same type.
 
 pub enum MatcherRef {
-    Strong(Rc<RefCell<Box<dyn Match>>>),
-    Weak(Weak<RefCell<Box<dyn Match>>>),
+    Strong(Rc<OnceCell<Box<dyn Match>>>),
+    Weak(Weak<OnceCell<Box<dyn Match>>>),
 }
 
 pub struct WrappedMatcher {
@@ -156,7 +148,7 @@ impl Match for WrappedMatcher {
         };
 
         DEPTH.with(|d| d.set(d.get() + 1));
-        let result = parser.borrow().apply(input);
+        let result = parser.get().unwrap().apply(input);
         DEPTH.with(|d| d.set(d.get() - 1));
 
         result
@@ -166,7 +158,7 @@ impl Match for WrappedMatcher {
 impl Display for WrappedMatcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.matcher {
-            MatcherRef::Strong(p) => p.fmt(f),
+            MatcherRef::Strong(p) => p.get().unwrap().fmt(f),
             MatcherRef::Weak(_) => write!(f, "Recursion({})", self.name),
         }
     }
@@ -183,7 +175,7 @@ where
 {
     fn wrap(self, max_depth: usize) -> Matcher<WrappedMatcher> {
         thread_local! {
-            static IN_PROGRESS: RefCell<HashMap<TypeId, Rc<RefCell<Box<dyn Match>>>>> = Default::default();
+            static IN_PROGRESS: RefCell<HashMap<TypeId, Rc<OnceCell<Box<dyn Match>>>>> = Default::default();
         }
         let type_id = self.type_id();
 
@@ -200,16 +192,15 @@ where
             });
         }
 
-        let dummy_matcher: Box<dyn Match> = Box::new(crate::tag("dummy").0);
-        let dummy = Rc::new(RefCell::new(dummy_matcher));
+        let matcher_ref = Rc::new(OnceCell::new());
 
-        IN_PROGRESS.with(|in_prog| in_prog.borrow_mut().insert(type_id, dummy.clone()));
+        IN_PROGRESS.with(|in_prog| in_prog.borrow_mut().insert(type_id, matcher_ref.clone()));
         let matcher: Box<dyn Match> = Box::new(self().0);
         IN_PROGRESS.with(|in_prog| in_prog.borrow_mut().remove(&type_id).unwrap());
 
-        *(dummy.borrow_mut()) = matcher;
+        matcher_ref.set(matcher).unwrap_or_else(|_| unreachable!());
         Matcher(WrappedMatcher {
-            matcher: MatcherRef::Strong(dummy),
+            matcher: MatcherRef::Strong(matcher_ref),
             max_depth,
             name: type_name::<F>(),
         })
