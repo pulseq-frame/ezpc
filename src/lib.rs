@@ -7,6 +7,6 @@ mod tests;
 pub use parser::{
     combinators::list,
     matchers::{eof, is_a, none_of, one_of, tag},
-    wrap::{DynMatch, DynParse, WrapMatcher, WrapParser},
+    wrap::{WrapMatcher, WrapParser},
     Match, Matcher, Parse, Parser,
 };
