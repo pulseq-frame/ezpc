@@ -9,7 +9,7 @@ pub type MatchResult<'a> = Result<&'a str, ParseError>;
 pub enum ParseError {
     #[error("Matcher didn't apply: {0}")]
     Mismatch(MatcherError),
-    #[error("Expected: {expected} at {at}")]
+    #[error("Expected: {expected}, found: '{at}'")]
     Fatal { expected: String, at: String },
     #[error("RecursionDepth({0}): Nested too deep")]
     RecursionDepth(usize),

@@ -15,6 +15,8 @@ use modifiers::{
     MapMatch, MapParse, Named, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
 };
 
+use self::fatal::esc_trunc;
+
 pub trait Parse: Display {
     type Output;
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output>;
@@ -34,7 +36,7 @@ impl<P: Parse> Parser<P> {
             if rest.is_empty() {
                 Ok(out)
             } else {
-                Err(ParseError::Mismatch(MatcherError::Eof))
+                Err(ParseError::Fatal { expected: "EOF".to_owned(), at: esc_trunc(rest) })
             }
         })
     }
@@ -105,7 +107,7 @@ impl<M: Match> Matcher<M> {
             if rest.is_empty() {
                 Ok(())
             } else {
-                Err(ParseError::Mismatch(MatcherError::Eof))
+                Err(ParseError::Fatal { expected: "EOF".to_owned(), at: esc_trunc(rest) })
             }
         })
     }

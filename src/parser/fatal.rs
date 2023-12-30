@@ -61,11 +61,13 @@ impl<M: Match> Display for FatalM<M> {
     }
 }
 
-fn esc_trunc(input: &str) -> String {
-    let input = format!("{input:?}");
+pub fn esc_trunc(mut input: &str) -> String {
+    if let Some(pos) = input.find('\r').or(input.find('\n')) {
+        input = &input[pos + 1..];
+    }
     if input.len() <= 20 {
-        input
+        input.to_owned()
     } else {
-        format!("\"{}...\"", &input[1..16])
+        format!("{}...", &input[1..16])
     }
 }

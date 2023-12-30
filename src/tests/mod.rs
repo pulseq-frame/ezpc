@@ -24,10 +24,10 @@ fn test_suite_y() {
         if name.starts_with("y_") {
             println!("{name}");
             let source = fs::read_to_string(path.path()).unwrap();
-            assert!(
-                json().parse_all(&source).is_ok(),
-                "Failed to parse '{name}'"
-            );
+            match json().parse_all(&source) {
+                Ok(_) => (),
+                Err(err) => panic!("Failed to parse '{name}': {err}"),
+            }
         }
     }
 }

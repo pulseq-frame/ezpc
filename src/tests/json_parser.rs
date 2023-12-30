@@ -28,7 +28,7 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
 }
 
 fn object() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
-    (tag("{") + ws() + tag("}")).val(Vec::new()) | (tag("{") + members() + tag("}"))
+    tag("{") + !((ws() + tag("}")).val(Vec::new()) | (members() + !tag("}").name("',' or '}'"))).name("'}'")
 }
 
 fn members() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
@@ -36,11 +36,11 @@ fn members() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
 }
 
 fn member() -> Parser<impl Parse<Output = (String, JsonValue)>> {
-    ws() + string() + ws() + tag(":") + element()
+    ws() + string() + ws() + !tag(":").name("':' + value") + element()
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    tag("[") + !((elements() + tag("]")) | (ws().val(Vec::new()) + tag("]"))).name("values or ']'")
+    tag("[") + !((ws() + tag("]")).val(Vec::new()) | (elements() + !tag("]").name("',' or ']'"))).name("']'")
 }
 
 fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
@@ -52,7 +52,7 @@ fn element() -> Parser<impl Parse<Output = JsonValue>> {
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
-    (tag("\"") + characters() + tag("\"")).map(|chars| chars.into_iter().collect())
+    (tag("\"") + characters() + !tag("\"")).map(|chars| chars.into_iter().collect())
 }
 
 fn characters() -> Parser<impl Parse<Output = Vec<char>>> {
@@ -60,7 +60,7 @@ fn characters() -> Parser<impl Parse<Output = Vec<char>>> {
     // escaped characters, because a single utf16 code point might not be a
     // legal `char` (utf-32 code point). So the separate utf16 parser parses
     // all consecutive \uXXXX escape sequences and splits it then into `char`s
-    (utf16_chars() | character().repeat(1..))
+    (utf16_chars() | character().map(|c| vec![c]))
         .repeat(0..)
         .map(|nested| nested.into_iter().flatten().collect())
 }
@@ -74,7 +74,7 @@ fn character() -> Parser<impl Parse<Output = char>> {
         !matches!(c, '\0'..='\u{1F}' | '"' | '\\')
     })
     .map(|s| char::from_str(s).unwrap())
-        | (tag("\\") + escape())
+        | (tag("\\") + !escape().name("'\\' + one of '\"\\/bfnrt'"))
 }
 
 fn escape() -> Parser<impl Parse<Output = char>> {
@@ -122,11 +122,11 @@ fn onenine() -> Matcher<impl Match> {
 }
 
 fn fraction() -> Matcher<impl Match> {
-    (tag(".") + digits()).opt()
+    (tag(".") + !digits().name("decimal places")).opt()
 }
 
 fn exponent() -> Matcher<impl Match> {
-    (one_of("Ee") + sign() + digits()).opt()
+    (one_of("Ee") + sign() + !digits().name("exponent")).opt()
 }
 
 fn sign() -> Matcher<impl Match> {
