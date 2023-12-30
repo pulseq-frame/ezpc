@@ -18,9 +18,11 @@ impl<P: Parse> Parse for FatalP<P> {
 
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0.apply(input).map_err(|err| match err {
-            ParseError::Mismatch(_) => ParseError::Fatal(format!("{}", self.0)),
-            ParseError::Fatal(_) => err,
-            ParseError::RecursionDepth(_) => err,
+            ParseError::Mismatch(_) => ParseError::Fatal {
+                expected: format!("{}", self.0),
+                at: esc_trunc(input),
+            },
+            _ => err,
         })
     }
 }
@@ -44,9 +46,11 @@ impl<M: Match> Not for Matcher<M> {
 impl<M: Match> Match for FatalM<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         self.0.apply(input).map_err(|err| match err {
-            ParseError::Mismatch(_) => ParseError::Fatal(format!("{}", self.0)),
-            ParseError::Fatal(_) => err,
-            ParseError::RecursionDepth(_) => err,
+            ParseError::Mismatch(_) => ParseError::Fatal {
+                expected: format!("{}", self.0),
+                at: esc_trunc(input),
+            },
+            _ => err,
         })
     }
 }
@@ -54,5 +58,14 @@ impl<M: Match> Match for FatalM<M> {
 impl<M: Match> Display for FatalM<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "!{}", self.0)
+    }
+}
+
+fn esc_trunc(input: &str) -> String {
+    let input = format!("{input:?}");
+    if input.len() <= 20 {
+        input
+    } else {
+        format!("\"{}...\"", &input[1..16])
     }
 }

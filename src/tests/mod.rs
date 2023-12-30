@@ -73,12 +73,3 @@ fn test_suite_i() {
         }
     }
 }
-
-// TODO: all files that throw an error should have good error messages
-// #[test]
-// fn test_single_file() {
-//     let _ = env_logger::builder().is_test(false).try_init();
-//     init();
-//     let source = include_str!("JSONTestSuite/test_parsing/n_structure_100000_opening_arrays.json");
-//     json().parse_all(source).unwrap();
-// }
