@@ -30,17 +30,17 @@ where
 {
     type Output = Vec<P::Output>;
 
-    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
-        match self.element.apply(input, depth) {
+        match self.element.apply(input) {
             Ok((item, mut input)) => {
                 items.push(item);
                 // TODO: the separator might return a fatal error which we should handle?
                 // But this would be strange since the separator should be simple (no recursion error)
                 // and not expected, as it is optional (list has arbitrary length)
-                while let Ok(rest) = self.separator.apply(input, depth) {
-                    match self.element.apply(rest, depth) {
+                while let Ok(rest) = self.separator.apply(input) {
+                    match self.element.apply(rest) {
                         Ok((item, rest)) => {
                             items.push(item);
                             input = rest;

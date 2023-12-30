@@ -27,7 +27,7 @@ pub struct WrappedParser<O: 'static> {
 impl<O: 'static> Parse for WrappedParser<O> {
     type Output = O;
 
-    fn apply<'a>(&self, input: &'a str, depth: usize) -> ParseResult<'a, Self::Output> {
+    fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         thread_local! { static DEPTH: Cell<usize> = const { Cell::new(0) }; }
 
         let depth = DEPTH.with(|d| d.get());
@@ -43,7 +43,7 @@ impl<O: 'static> Parse for WrappedParser<O> {
         };
 
         DEPTH.with(|d| d.set(d.get() + 1));
-        let result = parser.borrow().apply(input, depth + 1);
+        let result = parser.borrow().apply(input);
         DEPTH.with(|d| d.set(d.get() - 1));
 
         result
@@ -142,7 +142,7 @@ pub struct WrappedMatcher {
 }
 
 impl Match for WrappedMatcher {
-    fn apply<'a>(&self, input: &'a str, depth: usize) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         thread_local! { static DEPTH: Cell<usize> = const { Cell::new(0) }; }
 
         let depth = DEPTH.with(|d| d.get());
@@ -156,7 +156,7 @@ impl Match for WrappedMatcher {
         };
 
         DEPTH.with(|d| d.set(d.get() + 1));
-        let result = parser.borrow().apply(input, depth + 1);
+        let result = parser.borrow().apply(input);
         DEPTH.with(|d| d.set(d.get() - 1));
 
         result

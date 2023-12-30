@@ -40,7 +40,7 @@ where
 // All the Match implementations for the Matchers above
 
 impl Match for Eof {
-    fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if input.is_empty() {
             log::trace!("MATCH! {} - Eof", log_input(input));
             Ok(input)
@@ -52,7 +52,7 @@ impl Match for Eof {
 }
 
 impl Match for Tag {
-    fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some(rest) = input.strip_prefix(self.0) {
             log::trace!("MATCH! {} - Tag({:?})", log_input(input), self.0);
             Ok(rest)
@@ -64,7 +64,7 @@ impl Match for Tag {
 }
 
 impl Match for OneOf {
-    fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if self.0.contains(c) {
                 log::trace!("MATCH! {} - OneOf({:?})", log_input(input), self.0);
@@ -77,7 +77,7 @@ impl Match for OneOf {
 }
 
 impl Match for NoneOf {
-    fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if !self.0.contains(c) {
                 log::trace!("MATCH! {} - NoneOf({:?})", log_input(input), self.0);
@@ -93,7 +93,7 @@ impl<F> Match for IsA<F>
 where
     F: Fn(char) -> bool,
 {
-    fn apply<'a>(&self, input: &'a str, _depth: usize) -> MatchResult<'a> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
             if (self.predicate)(c) {
                 log::trace!("MATCH! {} - IsA", log_input(input));
