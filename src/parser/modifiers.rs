@@ -117,8 +117,8 @@ impl<T: Parse> Parse for Repeat<T> {
                     input = rest;
                 }
                 Err(err) => match err {
-                    ParseError::RecursionDepth(_) => return Err(err),
-                    _ => break,
+                    ParseError::Mismatch(_) => break,
+                    _ => return Err(err),
                 },
             }
         }
@@ -141,8 +141,8 @@ impl<T: Parse> Parse for Opt<T> {
         match self.0.apply(input) {
             Ok((out, rest)) => Ok((Some(out), rest)),
             Err(err) => match err {
-                ParseError::RecursionDepth(_) => Err(err),
-                _ => Ok((None, input)),
+                ParseError::Mismatch(_) => Ok((None, input)),
+                _ => return Err(err),
             },
         }
     }
@@ -161,8 +161,8 @@ impl<T: Match> Match for Repeat<T> {
                     input = rest;
                 }
                 Err(err) => match err {
-                    ParseError::RecursionDepth(_) => return Err(err),
-                    _ => break,
+                    ParseError::Mismatch(_) => break,
+                    _ => return Err(err),
                 },
             }
         }
@@ -183,8 +183,8 @@ impl<T: Match> Match for Opt<T> {
         match self.0.apply(input) {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
-                ParseError::RecursionDepth(_) => Err(err),
-                _ => Ok(input),
+                ParseError::Mismatch(_) => Ok(input),
+                _ => return Err(err),
             },
         }
     }

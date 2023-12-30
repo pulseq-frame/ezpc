@@ -46,16 +46,16 @@ where
                             input = rest;
                         }
                         Err(err) => match err {
-                            ParseError::RecursionDepth(_) => return Err(err),
-                            _ => break,
+                            ParseError::Mismatch(_) => break,
+                            _ => return Err(err),
                         },
                     }
                 }
                 Ok((items, input))
             }
             Err(err) => match err {
-                ParseError::RecursionDepth(_) => Err(err),
-                _ => Err(ParseError::Mismatch(MatcherError::List)),
+                ParseError::Mismatch(_) => Err(ParseError::Mismatch(MatcherError::List)),
+                _ => Err(err),
             },
         }
     }

@@ -1,5 +1,6 @@
 pub mod combinators;
 pub mod combine_ops;
+pub mod fatal;
 pub mod matchers;
 pub mod modifiers;
 pub mod wrap;

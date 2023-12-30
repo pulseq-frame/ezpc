@@ -123,8 +123,8 @@ where
         match self.0.apply(input) {
             Ok((out, rest)) => Ok((out, rest)),
             Err(err) => match err {
-                ParseError::RecursionDepth(_) => Err(err),
-                _ => self.1.apply(input),
+                ParseError::Mismatch(_) => self.1.apply(input),
+                _ => Err(err),
             },
         }
     }
@@ -135,8 +135,8 @@ impl<M1: Match, M2: Match> Match for OrMM<M1, M2> {
         match self.0.apply(input) {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
-                ParseError::RecursionDepth(_) => Err(err),
-                _ => self.1.apply(input),
+                ParseError::Mismatch(_) => self.1.apply(input),
+                _ => Err(err),
             },
         }
     }
