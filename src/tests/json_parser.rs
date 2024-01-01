@@ -28,7 +28,7 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
 }
 
 fn object() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
-    tag("{") + !((ws() + tag("}")).val(Vec::new()) | (members() + !tag("}").name("',' or '}'"))).name("'}'")
+    tag("{") + ((ws() + tag("}")).val(Vec::new()) | (members() + tag("}").fatal("',' or '}'"))).fatal("'}'")
 }
 
 fn members() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
@@ -36,11 +36,11 @@ fn members() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
 }
 
 fn member() -> Parser<impl Parse<Output = (String, JsonValue)>> {
-    ws() + string() + ws() + !tag(":").name("':' + value") + element()
+    ws() + string() + ws() + tag(":").fatal("':' + value") + element()
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    tag("[") + !((ws() + tag("]")).val(Vec::new()) | (elements() + !tag("]").name("',' or ']'"))).name("']'")
+    tag("[") + ((ws() + tag("]")).val(Vec::new()) | (elements() + tag("]").fatal("',' or ']'"))).fatal("']'")
 }
 
 fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
@@ -48,11 +48,11 @@ fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
 }
 
 fn element() -> Parser<impl Parse<Output = JsonValue>> {
-    ws() + !value.wrap(100).name("value") + ws()
+    ws() + value.wrap(100).fatal("value") + ws()
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
-    (tag("\"") + characters() + !tag("\"")).map(|chars| chars.into_iter().collect())
+    (tag("\"") + characters() + tag("\"").fatal("closing \"")).map(|chars| chars.into_iter().collect())
 }
 
 fn characters() -> Parser<impl Parse<Output = Vec<char>>> {
@@ -74,7 +74,7 @@ fn character() -> Parser<impl Parse<Output = char>> {
         !matches!(c, '\0'..='\u{1F}' | '"' | '\\')
     })
     .map(|s| char::from_str(s).unwrap())
-        | (tag("\\") + !escape().name("'\\' + one of '\"\\/bfnrt'"))
+        | (tag("\\") + escape().fatal("an escape sequence"))
 }
 
 fn escape() -> Parser<impl Parse<Output = char>> {
@@ -122,11 +122,11 @@ fn onenine() -> Matcher<impl Match> {
 }
 
 fn fraction() -> Matcher<impl Match> {
-    (tag(".") + !digits().name("decimal places")).opt()
+    (tag(".") + digits().fatal("decimal places")).opt()
 }
 
 fn exponent() -> Matcher<impl Match> {
-    (one_of("Ee") + sign() + !digits().name("exponent")).opt()
+    (one_of("Ee") + sign() + digits().fatal("exponent")).opt()
 }
 
 fn sign() -> Matcher<impl Match> {

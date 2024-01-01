@@ -4,9 +4,21 @@ use crate::result::{MatchResult, MatcherError, ParseError, ParseResult};
 
 use super::{Match, Parse};
 
-pub struct Named<T> {
+
+pub fn esc_trunc(mut input: &str) -> String {
+    if let Some(pos) = input.find('\r').or(input.find('\n')) {
+        input = &input[pos + 1..];
+    }
+    if input.len() <= 20 {
+        input.to_owned()
+    } else {
+        format!("{}...", &input[1..16])
+    }
+}
+
+pub struct Fatal<T> {
     pub parser_or_matcher: T,
-    pub name: &'static str,
+    pub expected: &'static str,
 }
 
 pub struct Repeat<T> {
@@ -49,9 +61,9 @@ pub struct TryMapParse<P, F> {
 
 // Display Implementations
 
-impl<T: Display> Display for Named<T> {
+impl<T: Display> Display for Fatal<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.name.fmt(f)
+        write!(f, "!{}: {}", self.parser_or_matcher, self.expected)
     }
 }
 
@@ -115,11 +127,17 @@ impl<P: Display, F> Display for TryMapParse<P, F> {
 
 // Implementations for modified Parsers
 
-impl<T: Parse> Parse for Named<T> {
-    type Output = T::Output;
+impl<P: Parse> Parse for Fatal<P> {
+    type Output = P::Output;
 
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        self.parser_or_matcher.apply(input)
+        self.parser_or_matcher.apply(input).map_err(|err| match err {
+            ParseError::Mismatch(_) => ParseError::Fatal {
+                expected: self.expected.to_owned(),
+                at: esc_trunc(input),
+            },
+            _ => err,
+        })
     }
 }
 
@@ -169,9 +187,15 @@ impl<T: Parse> Parse for Opt<T> {
 
 // Implementations for modified Matchers
 
-impl<T: Match> Match for Named<T> {
+impl<M: Match> Match for Fatal<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        self.parser_or_matcher.apply(input)
+        self.parser_or_matcher.apply(input).map_err(|err| match err {
+            ParseError::Mismatch(_) => ParseError::Fatal {
+                expected: self.expected.to_owned(),
+                at: esc_trunc(input),
+            },
+            _ => err,
+        })
     }
 }
 

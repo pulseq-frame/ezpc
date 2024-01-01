@@ -1,6 +1,5 @@
 pub mod combinators;
 pub mod combine_ops;
-pub mod fatal;
 pub mod matchers;
 pub mod modifiers;
 pub mod wrap;
@@ -12,10 +11,10 @@ use crate::{
     result::{MatchResult, MatcherError, ParseError, ParseResult},
 };
 use modifiers::{
-    MapMatch, MapParse, Named, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
+    Fatal, MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
 };
 
-use self::fatal::esc_trunc;
+use modifiers::esc_trunc;
 
 pub trait Parse: Display {
     type Output;
@@ -36,15 +35,18 @@ impl<P: Parse> Parser<P> {
             if rest.is_empty() {
                 Ok(out)
             } else {
-                Err(ParseError::Fatal { expected: "EOF".to_owned(), at: esc_trunc(rest) })
+                Err(ParseError::Fatal {
+                    expected: "EOF".to_owned(),
+                    at: esc_trunc(rest),
+                })
             }
         })
     }
 
-    pub fn name(self, name: &'static str) -> Parser<Named<P>> {
-        Parser(Named {
+    pub fn fatal(self, expected: &'static str) -> Parser<Fatal<P>> {
+        Parser(Fatal {
             parser_or_matcher: self.0,
-            name,
+            expected,
         })
     }
 
@@ -107,15 +109,18 @@ impl<M: Match> Matcher<M> {
             if rest.is_empty() {
                 Ok(())
             } else {
-                Err(ParseError::Fatal { expected: "EOF".to_owned(), at: esc_trunc(rest) })
+                Err(ParseError::Fatal {
+                    expected: "EOF".to_owned(),
+                    at: esc_trunc(rest),
+                })
             }
         })
     }
 
-    pub fn name(self, name: &'static str) -> Matcher<Named<M>> {
-        Matcher(Named {
+    pub fn fatal(self, expected: &'static str) -> Matcher<Fatal<M>> {
+        Matcher(Fatal {
             parser_or_matcher: self.0,
-            name,
+            expected,
         })
     }
 
