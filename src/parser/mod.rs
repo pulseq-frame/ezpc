@@ -8,13 +8,11 @@ use std::fmt::Display;
 
 use crate::{
     range::RangeArgument,
-    result::{MatchResult, MatcherError, ParseError, ParseResult},
+    result::{rel_pos, slice_pos, EzpcError, MatchResult, ParseResult, Position, RawEzpcError},
 };
 use modifiers::{
     Fatal, MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
 };
-
-use modifiers::esc_trunc;
 
 pub trait Parse: Display {
     type Output;
@@ -30,17 +28,19 @@ impl<T: Parse> Display for Parser<T> {
 }
 
 impl<P: Parse> Parser<P> {
-    pub fn parse_all(&self, source: &str) -> Result<P::Output, ParseError> {
-        self.0.apply(source).and_then(|(out, rest)| {
-            if rest.is_empty() {
-                Ok(out)
-            } else {
-                Err(ParseError::Fatal {
-                    expected: "EOF".to_owned(),
-                    at: esc_trunc(rest),
-                })
+    pub fn parse_all<'a>(&self, source: &'a str) -> Result<P::Output, EzpcError<'a>> {
+        match self.0.apply(source) {
+            Ok((out, rest)) => {
+                if rest.is_empty() {
+                    Ok(out)
+                } else {
+                    Err(EzpcError::PartialParse {
+                        pos: Position::from_ptr(source, rest.as_ptr()),
+                    })
+                }
             }
-        })
+            Err(raw) => Err(EzpcError::from_raw(raw, source)),
+        }
     }
 
     pub fn fatal(self, expected: &'static str) -> Parser<Fatal<P>> {
@@ -104,17 +104,19 @@ impl<T: Match> Display for Matcher<T> {
 }
 
 impl<M: Match> Matcher<M> {
-    pub fn match_all(&self, source: &str) -> Result<(), ParseError> {
-        self.0.apply(source).and_then(|rest| {
-            if rest.is_empty() {
-                Ok(())
-            } else {
-                Err(ParseError::Fatal {
-                    expected: "EOF".to_owned(),
-                    at: esc_trunc(rest),
-                })
+    pub fn match_all<'a>(&self, source: &'a str) -> Result<(), EzpcError<'a>> {
+        match self.0.apply(source) {
+            Ok(rest) => {
+                if rest.is_empty() {
+                    Ok(())
+                } else {
+                    Err(EzpcError::PartialParse {
+                        pos: Position::from_ptr(source, rest.as_ptr()),
+                    })
+                }
             }
-        })
+            Err(raw) => Err(EzpcError::from_raw(raw, source)),
+        }
     }
 
     pub fn fatal(self, expected: &'static str) -> Matcher<Fatal<M>> {

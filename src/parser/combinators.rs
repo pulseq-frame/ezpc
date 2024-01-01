@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::{MatcherError, ParseError, ParseResult};
+use crate::result::{ParseResult, RawEzpcError};
 
 pub struct List<P, M>
 where
@@ -33,6 +33,7 @@ where
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         let mut items = Vec::new();
 
+        // TODO: shorten code by replacing match with Option::map()
         match self.element.apply(input) {
             Ok((item, mut input)) => {
                 items.push(item);
@@ -46,17 +47,14 @@ where
                             input = rest;
                         }
                         Err(err) => match err {
-                            ParseError::Mismatch(_) => break,
+                            RawEzpcError::PartialParse { .. } => break,
                             _ => return Err(err),
                         },
                     }
                 }
                 Ok((items, input))
             }
-            Err(err) => match err {
-                ParseError::Mismatch(_) => Err(ParseError::Mismatch(MatcherError::List)),
-                _ => Err(err),
-            },
+            Err(err) => Err(err),
         }
     }
 }

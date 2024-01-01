@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
-use crate::result::{MatchResult, MatcherError, ParseError, ParseResult};
+use crate::result::{EzpcError, MatchResult, ParseResult, RawEzpcError};
 
 use super::{Match, Parse};
-
 
 pub fn esc_trunc(mut input: &str) -> String {
     if let Some(pos) = input.find('\r').or(input.find('\n')) {
@@ -131,13 +130,15 @@ impl<P: Parse> Parse for Fatal<P> {
     type Output = P::Output;
 
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        self.parser_or_matcher.apply(input).map_err(|err| match err {
-            ParseError::Mismatch(_) => ParseError::Fatal {
-                expected: self.expected.to_owned(),
-                at: esc_trunc(input),
-            },
-            _ => err,
-        })
+        self.parser_or_matcher
+            .apply(input)
+            .map_err(|err| match err {
+                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
+                    expected: self.expected,
+                    pos,
+                },
+                _ => err,
+            })
     }
 }
 
@@ -154,17 +155,16 @@ impl<T: Parse> Parse for Repeat<T> {
                     input = rest;
                 }
                 Err(err) => match err {
-                    ParseError::Mismatch(_) => break,
+                    RawEzpcError::PartialParse { .. } => break,
                     _ => return Err(err),
                 },
             }
         }
 
         if items.len() < self.start {
-            Err(ParseError::Mismatch(MatcherError::Repeat {
-                min: self.start,
-                count: items.len(),
-            }))
+            Err(RawEzpcError::PartialParse {
+                pos: input.as_ptr(),
+            })
         } else {
             Ok((items, input))
         }
@@ -178,7 +178,7 @@ impl<T: Parse> Parse for Opt<T> {
         match self.0.apply(input) {
             Ok((out, rest)) => Ok((Some(out), rest)),
             Err(err) => match err {
-                ParseError::Mismatch(_) => Ok((None, input)),
+                RawEzpcError::PartialParse { .. } => Ok((None, input)),
                 _ => return Err(err),
             },
         }
@@ -189,13 +189,15 @@ impl<T: Parse> Parse for Opt<T> {
 
 impl<M: Match> Match for Fatal<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        self.parser_or_matcher.apply(input).map_err(|err| match err {
-            ParseError::Mismatch(_) => ParseError::Fatal {
-                expected: self.expected.to_owned(),
-                at: esc_trunc(input),
-            },
-            _ => err,
-        })
+        self.parser_or_matcher
+            .apply(input)
+            .map_err(|err| match err {
+                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
+                    expected: self.expected,
+                    pos,
+                },
+                _ => err,
+            })
     }
 }
 
@@ -210,17 +212,16 @@ impl<T: Match> Match for Repeat<T> {
                     input = rest;
                 }
                 Err(err) => match err {
-                    ParseError::Mismatch(_) => break,
+                    RawEzpcError::PartialParse { .. } => break,
                     _ => return Err(err),
                 },
             }
         }
 
         if item_count < self.start {
-            Err(ParseError::Mismatch(MatcherError::Repeat {
-                min: self.start,
-                count: item_count,
-            }))
+            Err(RawEzpcError::PartialParse {
+                pos: input.as_ptr(),
+            })
         } else {
             Ok(input)
         }
@@ -232,7 +233,7 @@ impl<T: Match> Match for Opt<T> {
         match self.0.apply(input) {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
-                ParseError::Mismatch(_) => Ok(input),
+                RawEzpcError::PartialParse { .. } => Ok(input),
                 _ => return Err(err),
             },
         }
@@ -302,7 +303,7 @@ where
             .apply(input)
             .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Mismatch(MatcherError::Boxed(err.into()))),
+                Err(err) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
             })
     }
 }
@@ -320,7 +321,7 @@ where
             .apply(input)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(ParseError::Mismatch(MatcherError::Boxed(err.into()))),
+                Err(err) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
             })
     }
 }

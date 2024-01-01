@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use super::{Match, Matcher};
-use crate::result::{MatchResult, MatcherError, ParseError};
+use crate::result::{MatchResult, RawEzpcError};
 
 pub struct Eof;
 pub fn eof() -> Matcher<Eof> {
@@ -46,7 +46,9 @@ impl Match for Eof {
             Ok(input)
         } else {
             log::trace!("failed {} - Eof", log_input(input));
-            Err(ParseError::Mismatch(MatcherError::Eof))
+            Err(RawEzpcError::PartialParse {
+                pos: input.as_ptr(),
+            })
         }
     }
 }
@@ -58,7 +60,9 @@ impl Match for Tag {
             Ok(rest)
         } else {
             log::trace!("failed {} - Tag({:?})", log_input(input), self.0);
-            Err(ParseError::Mismatch(MatcherError::Tag(self.0)))
+            Err(RawEzpcError::PartialParse {
+                pos: input.as_ptr(),
+            })
         }
     }
 }
@@ -72,7 +76,9 @@ impl Match for OneOf {
             }
         }
         log::trace!("failed {} - OneOf({:?})", log_input(input), self.0);
-        Err(ParseError::Mismatch(MatcherError::OneOf(self.0)))
+        Err(RawEzpcError::PartialParse {
+            pos: input.as_ptr(),
+        })
     }
 }
 
@@ -85,7 +91,9 @@ impl Match for NoneOf {
             }
         }
         log::trace!("failed {} - NoneOf({:?})", log_input(input), self.0);
-        Err(ParseError::Mismatch(MatcherError::NoneOf(self.0)))
+        Err(RawEzpcError::PartialParse {
+            pos: input.as_ptr(),
+        })
     }
 }
 
@@ -101,7 +109,9 @@ where
             }
         }
         log::trace!("failed {} - IsA", log_input(input));
-        Err(ParseError::Mismatch(MatcherError::IsA(self.description)))
+        Err(RawEzpcError::PartialParse {
+            pos: input.as_ptr(),
+        })
     }
 }
 

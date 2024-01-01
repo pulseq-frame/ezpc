@@ -3,7 +3,7 @@ use std::ops::Add;
 use std::ops::BitOr;
 
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::ParseError;
+use crate::result::RawEzpcError;
 use crate::result::{MatchResult, ParseResult};
 
 // Sequence of parsers or matchers, produced by adding (+) them
@@ -123,7 +123,14 @@ where
         match self.0.apply(input) {
             Ok((out, rest)) => Ok((out, rest)),
             Err(err) => match err {
-                ParseError::Mismatch(_) => self.1.apply(input),
+                RawEzpcError::PartialParse { pos: pos1 } => {
+                    self.1.apply(input).map_err(|err| match err {
+                        RawEzpcError::PartialParse { pos: pos2 } => RawEzpcError::PartialParse {
+                            pos: pos1.max(pos2),
+                        },
+                        _ => err,
+                    })
+                }
                 _ => Err(err),
             },
         }
@@ -135,7 +142,14 @@ impl<M1: Match, M2: Match> Match for OrMM<M1, M2> {
         match self.0.apply(input) {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
-                ParseError::Mismatch(_) => self.1.apply(input),
+                RawEzpcError::PartialParse { pos: pos1 } => {
+                    self.1.apply(input).map_err(|err| match err {
+                        RawEzpcError::PartialParse { pos: pos2 } => RawEzpcError::PartialParse {
+                            pos: pos1.max(pos2),
+                        },
+                        _ => err,
+                    })
+                }
                 _ => Err(err),
             },
         }

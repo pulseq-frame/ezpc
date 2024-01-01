@@ -48,7 +48,7 @@ fn test_suite_n() {
                 println!("{name}");
                 match json().parse_all(&source) {
                     Ok(_) => panic!("Parsed despite having errors '{name}'"),
-                    Err(err) => writeln!(error_file, "{name:64}- {err}").unwrap(),
+                    Err(err) => writeln!(error_file, "{name}\n{err}\n").unwrap(),
                 }
             }
         }
