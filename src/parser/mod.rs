@@ -14,6 +14,8 @@ use modifiers::{
     Fatal, MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
 };
 
+use self::modifiers::{CheckMatch, CheckParse};
+
 pub trait Parse: Display {
     type Output;
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output>;
@@ -46,6 +48,13 @@ impl<P: Parse> Parser<P> {
     pub fn fatal(self, expected: &'static str) -> Parser<Fatal<P>> {
         Parser(Fatal {
             parser_or_matcher: self.0,
+            expected,
+        })
+    }
+
+    pub fn check(self, expected: &'static str) -> Matcher<CheckParse<P>> {
+        Matcher(CheckParse {
+            parser: self.0,
             expected,
         })
     }
@@ -122,6 +131,13 @@ impl<M: Match> Matcher<M> {
     pub fn fatal(self, expected: &'static str) -> Matcher<Fatal<M>> {
         Matcher(Fatal {
             parser_or_matcher: self.0,
+            expected,
+        })
+    }
+
+    pub fn check(self, expected: &'static str) -> Matcher<CheckMatch<M>> {
+        Matcher(CheckMatch {
+            matcher: self.0,
             expected,
         })
     }

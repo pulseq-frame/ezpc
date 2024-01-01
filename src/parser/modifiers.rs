@@ -8,6 +8,16 @@ pub struct Fatal<T> {
     pub expected: &'static str,
 }
 
+pub struct CheckMatch<M> {
+    pub matcher: M,
+    pub expected: &'static str,
+}
+
+pub struct CheckParse<P> {
+    pub parser: P,
+    pub expected: &'static str,
+}
+
 pub struct Repeat<T> {
     pub(crate) parser_or_matcher: T,
     pub(crate) start: usize,
@@ -51,6 +61,18 @@ pub struct TryMapParse<P, F> {
 impl<T: Display> Display for Fatal<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "!{}: {}", self.parser_or_matcher, self.expected)
+    }
+}
+
+impl<M: Match> Display for CheckMatch<M> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "!{}: {}", self.matcher, self.expected)
+    }
+}
+
+impl<P: Parse> Display for CheckParse<P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "!{}: {}", self.parser, self.expected)
     }
 }
 
@@ -186,6 +208,36 @@ impl<M: Match> Match for Fatal<M> {
                 },
                 _ => err,
             })
+    }
+}
+
+impl<M: Match> Match for CheckMatch<M> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        match self.matcher.apply(input) {
+            Ok(_) => Ok(input), // We want to ensure it applies without applying it
+            Err(err) => Err(match err {
+                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
+                    expected: self.expected,
+                    pos,
+                },
+                _ => err,
+            }),
+        }
+    }
+}
+
+impl<P: Parse> Match for CheckParse<P> {
+    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
+        match self.parser.apply(input) {
+            Ok(_) => Ok(input), // We want to ensure it applies without applying it
+            Err(err) => Err(match err {
+                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
+                    expected: self.expected,
+                    pos,
+                },
+                _ => err,
+            }),
+        }
     }
 }
 

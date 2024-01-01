@@ -52,11 +52,11 @@ fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
 }
 
 fn element() -> Parser<impl Parse<Output = JsonValue>> {
-    ws() + value.wrap(100).fatal("value") + ws()
+    ws() + value.wrap(100).fatal("a value") + ws()
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
-    (tag("\"") + characters() + tag("\"").fatal("closing \""))
+    (tag("\"") + characters() + tag("\"").fatal("a closing \""))
         .map(|chars| chars.into_iter().collect())
 }
 
@@ -75,10 +75,11 @@ fn character() -> Parser<impl Parse<Output = char>> {
     // code points" used by UTF-16 (0xD800 to 0xDFFF) are not valid code points
     // for a single char. Rust strings are always valid unicode, so we parse
     // everything except control characters (0x0 to 0x1F) as valid char.
-    is_a("utf-16 codepoint", |c| {
-        !matches!(c, '\0'..='\u{1F}' | '"' | '\\')
-    })
-    .map(|s| char::from_str(s).unwrap())
+    is_a("control sequence", |c| !matches!(c, '\0'..='\u{1F}')).check("a valid utf-8 codepoint")
+        + is_a("utf-16 codepoint", |c| {
+            !matches!(c, '\0'..='\u{1F}' | '"' | '\\')
+        })
+        .map(|s| char::from_str(s).unwrap())
         | (tag("\\") + escape().fatal("an escape sequence"))
 }
 
@@ -111,7 +112,9 @@ fn number() -> Parser<impl Parse<Output = f64>> {
 fn integer() -> Matcher<impl Match> {
     // Small change from grammar: try to parse the longer matcher first,
     // otherwise it fails when the integer continues.
-    (onenine() + digits()) | digit() | (tag("-") + onenine() + digits()) | (tag("-") + digit())
+    (onenine() + digits())
+        | digit()
+        | (tag("-") + ((onenine() + digits()) | digit()).fatal("a number"))
 }
 
 fn digits() -> Matcher<impl Match> {
