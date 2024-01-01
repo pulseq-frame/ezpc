@@ -1,19 +1,7 @@
 use std::fmt::Display;
 
-use crate::result::{EzpcError, MatchResult, ParseResult, RawEzpcError};
-
 use super::{Match, Parse};
-
-pub fn esc_trunc(mut input: &str) -> String {
-    if let Some(pos) = input.find('\r').or(input.find('\n')) {
-        input = &input[pos + 1..];
-    }
-    if input.len() <= 20 {
-        input.to_owned()
-    } else {
-        format!("{}...", &input[1..16])
-    }
-}
+use crate::result::{MatchResult, ParseResult, RawEzpcError};
 
 pub struct Fatal<T> {
     pub parser_or_matcher: T,
@@ -303,7 +291,7 @@ where
             .apply(input)
             .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
+                Err(_) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
             })
     }
 }
@@ -321,7 +309,7 @@ where
             .apply(input)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
-                Err(err) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
+                Err(_) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
             })
     }
 }

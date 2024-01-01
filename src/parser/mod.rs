@@ -8,7 +8,7 @@ use std::fmt::Display;
 
 use crate::{
     range::RangeArgument,
-    result::{rel_pos, slice_pos, EzpcError, MatchResult, ParseResult, Position, RawEzpcError},
+    result::{EzpcError, MatchResult, ParseResult, Position},
 };
 use modifiers::{
     Fatal, MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,

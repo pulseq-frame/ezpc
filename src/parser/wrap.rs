@@ -7,7 +7,7 @@ use std::{
 };
 
 use super::{Match, Matcher, Parse, Parser};
-use crate::result::{EzpcError, MatchResult, ParseResult, RawEzpcError};
+use crate::result::{MatchResult, ParseResult, RawEzpcError};
 
 // Wrapping of Parsers. Further down, the wrapping of matchers is implemented.
 // It is not commented as it is basically the same, but the code is a bit simpler

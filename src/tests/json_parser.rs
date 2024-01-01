@@ -28,7 +28,9 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
 }
 
 fn object() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
-    tag("{") + ((ws() + tag("}")).val(Vec::new()) | (members() + tag("}").fatal("',' or '}'"))).fatal("'}'")
+    tag("{")
+        + ((ws() + tag("}")).val(Vec::new()) | (members() + tag("}").fatal("',' or '}'")))
+            .fatal("'}'")
 }
 
 fn members() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
@@ -40,7 +42,9 @@ fn member() -> Parser<impl Parse<Output = (String, JsonValue)>> {
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    tag("[") + ((ws() + tag("]")).val(Vec::new()) | (elements() + tag("]").fatal("',' or ']'"))).fatal("']'")
+    tag("[")
+        + ((ws() + tag("]")).val(Vec::new()) | (elements() + tag("]").fatal("',' or ']'")))
+            .fatal("']'")
 }
 
 fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
@@ -52,7 +56,8 @@ fn element() -> Parser<impl Parse<Output = JsonValue>> {
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
-    (tag("\"") + characters() + tag("\"").fatal("closing \"")).map(|chars| chars.into_iter().collect())
+    (tag("\"") + characters() + tag("\"").fatal("closing \""))
+        .map(|chars| chars.into_iter().collect())
 }
 
 fn characters() -> Parser<impl Parse<Output = Vec<char>>> {

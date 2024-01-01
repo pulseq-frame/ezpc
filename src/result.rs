@@ -5,23 +5,6 @@ use thiserror::Error;
 pub type ParseResult<'a, O> = Result<(O, &'a str), RawEzpcError>;
 pub type MatchResult<'a> = Result<&'a str, RawEzpcError>;
 
-pub fn slice_pos<'a>(source: &'a str, substr: &'a str) -> usize {
-    let start_source = source.as_ptr() as usize;
-    let start_substr = substr.as_ptr() as usize;
-    assert!(start_substr >= start_source);
-
-    let pos = start_substr - start_source;
-    assert_eq!(source.len(), pos + substr.len());
-    pos
-}
-
-pub fn rel_pos(source: &str, substr_ptr: *const u8) -> usize {
-    let start_source = source.as_ptr() as usize;
-    let start_substr = substr_ptr as usize;
-    assert!(start_substr >= start_source);
-    start_substr - start_source
-}
-
 pub enum RawEzpcError {
     PartialParse {
         pos: *const u8,
