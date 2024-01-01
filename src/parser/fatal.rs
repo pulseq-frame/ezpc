@@ -3,17 +3,31 @@ use std::{fmt::Display, ops::Not};
 use super::{Match, Matcher, Parse, Parser};
 use crate::result::{MatchResult, ParseError, ParseResult};
 
-pub struct FatalP<P: Parse>(P);
+pub struct Fatal<T>(T);
 
 impl<P: Parse> Not for Parser<P> {
-    type Output = Parser<FatalP<P>>;
+    type Output = Parser<Fatal<P>>;
 
     fn not(self) -> Self::Output {
-        Parser(FatalP(self.0))
+        Parser(Fatal(self.0))
     }
 }
 
-impl<P: Parse> Parse for FatalP<P> {
+impl<M: Match> Not for Matcher<M> {
+    type Output = Matcher<Fatal<M>>;
+
+    fn not(self) -> Self::Output {
+        Matcher(Fatal(self.0))
+    }
+}
+
+impl<T: Display> Display for Fatal<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "!{}", self.0)
+    }
+}
+
+impl<P: Parse> Parse for Fatal<P> {
     type Output = P::Output;
 
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
@@ -27,23 +41,7 @@ impl<P: Parse> Parse for FatalP<P> {
     }
 }
 
-impl<P: Parse> Display for FatalP<P> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "!{}", self.0)
-    }
-}
-
-pub struct FatalM<M: Match>(M);
-
-impl<M: Match> Not for Matcher<M> {
-    type Output = Matcher<FatalM<M>>;
-
-    fn not(self) -> Self::Output {
-        Matcher(FatalM(self.0))
-    }
-}
-
-impl<M: Match> Match for FatalM<M> {
+impl<M: Match> Match for Fatal<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         self.0.apply(input).map_err(|err| match err {
             ParseError::Mismatch(_) => ParseError::Fatal {
@@ -52,12 +50,6 @@ impl<M: Match> Match for FatalM<M> {
             },
             _ => err,
         })
-    }
-}
-
-impl<M: Match> Display for FatalM<M> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "!{}", self.0)
     }
 }
 
