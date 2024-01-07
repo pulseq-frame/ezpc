@@ -123,9 +123,9 @@ where
         match self.0.apply(input) {
             Ok((out, rest)) => Ok((out, rest)),
             Err(err) => match err {
-                RawEzpcError::PartialParse { pos: pos1 } => {
+                RawEzpcError::Mismatch { pos: pos1 } => {
                     self.1.apply(input).map_err(|err| match err {
-                        RawEzpcError::PartialParse { pos: pos2 } => RawEzpcError::PartialParse {
+                        RawEzpcError::Mismatch { pos: pos2 } => RawEzpcError::Mismatch {
                             pos: pos1.max(pos2),
                         },
                         _ => err,
@@ -142,9 +142,9 @@ impl<M1: Match, M2: Match> Match for OrMM<M1, M2> {
         match self.0.apply(input) {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
-                RawEzpcError::PartialParse { pos: pos1 } => {
+                RawEzpcError::Mismatch { pos: pos1 } => {
                     self.1.apply(input).map_err(|err| match err {
-                        RawEzpcError::PartialParse { pos: pos2 } => RawEzpcError::PartialParse {
+                        RawEzpcError::Mismatch { pos: pos2 } => RawEzpcError::Mismatch {
                             pos: pos1.max(pos2),
                         },
                         _ => err,

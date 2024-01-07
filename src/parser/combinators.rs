@@ -47,7 +47,7 @@ where
                             input = rest;
                         }
                         Err(err) => match err {
-                            RawEzpcError::PartialParse { .. } => break,
+                            RawEzpcError::Mismatch { .. } => break,
                             _ => return Err(err),
                         },
                     }

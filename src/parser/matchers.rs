@@ -40,7 +40,7 @@ impl Match for Eof {
             Ok(input)
         } else {
             log::trace!("failed {} - Eof", log_input(input));
-            Err(RawEzpcError::PartialParse {
+            Err(RawEzpcError::Mismatch {
                 pos: input.as_ptr(),
             })
         }
@@ -54,7 +54,7 @@ impl Match for Tag {
             Ok(rest)
         } else {
             log::trace!("failed {} - Tag({:?})", log_input(input), self.0);
-            Err(RawEzpcError::PartialParse {
+            Err(RawEzpcError::Mismatch {
                 pos: input.as_ptr(),
             })
         }
@@ -70,7 +70,7 @@ impl Match for OneOf {
             }
         }
         log::trace!("failed {} - OneOf({:?})", log_input(input), self.0);
-        Err(RawEzpcError::PartialParse {
+        Err(RawEzpcError::Mismatch {
             pos: input.as_ptr(),
         })
     }
@@ -85,7 +85,7 @@ impl Match for NoneOf {
             }
         }
         log::trace!("failed {} - NoneOf({:?})", log_input(input), self.0);
-        Err(RawEzpcError::PartialParse {
+        Err(RawEzpcError::Mismatch {
             pos: input.as_ptr(),
         })
     }
@@ -103,7 +103,7 @@ where
             }
         }
         log::trace!("failed {} - IsA", log_input(input));
-        Err(RawEzpcError::PartialParse {
+        Err(RawEzpcError::Mismatch {
             pos: input.as_ptr(),
         })
     }

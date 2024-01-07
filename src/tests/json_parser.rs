@@ -47,7 +47,7 @@ fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
 }
 
 fn integer() -> Matcher<impl Match> {
-    (tag("0") + none_of("0123456789").check(error_msg::LEADING_ZERO))
+    (tag("0") + one_of("0123456789").reject(error_msg::LEADING_ZERO))
         | one_of("123456789") + one_of("0123456789").repeat(0..)
 }
 
@@ -66,7 +66,7 @@ fn string() -> Parser<impl Parse<Output = String>> {
 }
 
 fn char_str() -> Parser<impl Parse<Output = String>> {
-    (is_a(|c| !matches!(c, '\0'..='\u{1F}')).check(error_msg::UNESCAPED_CTRL_CHAR)
+    (is_a(|c| matches!(c, '\0'..='\u{1F}')).reject(error_msg::UNESCAPED_CTRL_CHAR)
         + none_of("\\\""))
     .repeat(1..)
     .map(|s| s.to_owned())

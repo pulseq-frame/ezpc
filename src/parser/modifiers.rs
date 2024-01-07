@@ -8,13 +8,8 @@ pub struct Fatal<T> {
     pub expected: &'static str,
 }
 
-pub struct CheckMatch<M> {
+pub struct Reject<M> {
     pub matcher: M,
-    pub expected: &'static str,
-}
-
-pub struct CheckParse<P> {
-    pub parser: P,
     pub expected: &'static str,
 }
 
@@ -66,15 +61,9 @@ impl<T: Display> Display for Fatal<T> {
     }
 }
 
-impl<M: Match> Display for CheckMatch<M> {
+impl<M: Match> Display for Reject<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "!{}: {}", self.matcher, self.expected)
-    }
-}
-
-impl<P: Parse> Display for CheckParse<P> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "!{}: {}", self.parser, self.expected)
     }
 }
 
@@ -145,7 +134,7 @@ impl<P: Parse> Parse for Fatal<P> {
         self.parser_or_matcher
             .apply(input)
             .map_err(|err| match err {
-                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
+                RawEzpcError::Mismatch { pos } => RawEzpcError::Fatal {
                     expected: self.expected,
                     pos,
                 },
@@ -167,14 +156,14 @@ impl<T: Parse> Parse for Repeat<T> {
                     input = rest;
                 }
                 Err(err) => match err {
-                    RawEzpcError::PartialParse { .. } => break,
+                    RawEzpcError::Mismatch { .. } => break,
                     _ => return Err(err),
                 },
             }
         }
 
         if items.len() < self.start {
-            Err(RawEzpcError::PartialParse {
+            Err(RawEzpcError::Mismatch {
                 pos: input.as_ptr(),
             })
         } else {
@@ -190,7 +179,7 @@ impl<T: Parse> Parse for Opt<T> {
         match self.0.apply(input) {
             Ok((out, rest)) => Ok((Some(out), rest)),
             Err(err) => match err {
-                RawEzpcError::PartialParse { .. } => Ok((None, input)),
+                RawEzpcError::Mismatch { .. } => Ok((None, input)),
                 _ => return Err(err),
             },
         }
@@ -204,7 +193,7 @@ impl<M: Match> Match for Fatal<M> {
         self.parser_or_matcher
             .apply(input)
             .map_err(|err| match err {
-                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
+                RawEzpcError::Mismatch { pos } => RawEzpcError::Fatal {
                     expected: self.expected,
                     pos,
                 },
@@ -213,32 +202,14 @@ impl<M: Match> Match for Fatal<M> {
     }
 }
 
-impl<M: Match> Match for CheckMatch<M> {
+impl<M: Match> Match for Reject<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         match self.matcher.apply(input) {
-            Ok(_) => Ok(input), // We want to ensure it applies without applying it
-            Err(err) => Err(match err {
-                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
-                    expected: self.expected,
-                    pos,
-                },
-                _ => err,
-            }),
-        }
-    }
-}
-
-impl<P: Parse> Match for CheckParse<P> {
-    fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
-        match self.parser.apply(input) {
-            Ok(_) => Ok(input), // We want to ensure it applies without applying it
-            Err(err) => Err(match err {
-                RawEzpcError::PartialParse { pos } => RawEzpcError::Fatal {
-                    expected: self.expected,
-                    pos,
-                },
-                _ => err,
-            }),
+            Ok(_) =>  Err(RawEzpcError::Fatal { expected: self.expected, pos: input.as_ptr() }),
+            Err(err) => match err {
+                RawEzpcError::Mismatch { .. } => Ok(input),
+                _ => Err(err)
+            }
         }
     }
 }
@@ -254,14 +225,14 @@ impl<T: Match> Match for Repeat<T> {
                     input = rest;
                 }
                 Err(err) => match err {
-                    RawEzpcError::PartialParse { .. } => break,
+                    RawEzpcError::Mismatch { .. } => break,
                     _ => return Err(err),
                 },
             }
         }
 
         if item_count < self.start {
-            Err(RawEzpcError::PartialParse {
+            Err(RawEzpcError::Mismatch {
                 pos: input.as_ptr(),
             })
         } else {
@@ -275,7 +246,7 @@ impl<T: Match> Match for Opt<T> {
         match self.0.apply(input) {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
-                RawEzpcError::PartialParse { .. } => Ok(input),
+                RawEzpcError::Mismatch { .. } => Ok(input),
                 _ => return Err(err),
             },
         }

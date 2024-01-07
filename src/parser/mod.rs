@@ -14,7 +14,7 @@ use modifiers::{
     ConvertMatch, ConvertParse, Fatal, MapMatch, MapParse, Opt, Repeat, ValMatch, ValParse,
 };
 
-use self::modifiers::{CheckMatch, CheckParse};
+use self::modifiers::Reject;
 
 pub trait Parse: Display {
     type Output;
@@ -48,13 +48,6 @@ impl<P: Parse> Parser<P> {
     pub fn fatal(self, expected: &'static str) -> Parser<Fatal<P>> {
         Parser(Fatal {
             parser_or_matcher: self.0,
-            expected,
-        })
-    }
-
-    pub fn check(self, expected: &'static str) -> Matcher<CheckParse<P>> {
-        Matcher(CheckParse {
-            parser: self.0,
             expected,
         })
     }
@@ -136,8 +129,8 @@ impl<M: Match> Matcher<M> {
         })
     }
 
-    pub fn check(self, expected: &'static str) -> Matcher<CheckMatch<M>> {
-        Matcher(CheckMatch {
+    pub fn reject(self, expected: &'static str) -> Matcher<Reject<M>> {
+        Matcher(Reject {
             matcher: self.0,
             expected,
         })

@@ -6,7 +6,7 @@ pub type ParseResult<'a, O> = Result<(O, &'a str), RawEzpcError>;
 pub type MatchResult<'a> = Result<&'a str, RawEzpcError>;
 
 pub enum RawEzpcError {
-    PartialParse {
+    Mismatch {
         pos: *const u8,
     },
     Fatal {
@@ -16,11 +16,6 @@ pub enum RawEzpcError {
     Recursion {
         max_depth: usize,
         parser_name: &'static str,
-        pos: *const u8,
-    },
-    MapError {
-        input: Box<dyn std::fmt::Debug>,
-        error: Box<dyn std::error::Error>,
         pos: *const u8,
     },
 }
@@ -43,18 +38,12 @@ pub enum EzpcError<'a> {
         parser_name: &'static str,
         pos: Position<'a>,
     },
-    #[error("Failed to map {input:?} -> {error}:\n{pos}")]
-    MapError {
-        input: Box<dyn std::fmt::Debug>,
-        error: Box<dyn std::error::Error>,
-        pos: Position<'a>,
-    },
 }
 
 impl<'a> EzpcError<'a> {
     pub fn from_raw(raw: RawEzpcError, source: &'a str) -> Self {
         match raw {
-            RawEzpcError::PartialParse { pos } => EzpcError::PartialParse {
+            RawEzpcError::Mismatch { pos } => EzpcError::PartialParse {
                 pos: Position::from_ptr(source, pos),
             },
             RawEzpcError::Fatal { expected, pos } => EzpcError::Fatal {
@@ -68,11 +57,6 @@ impl<'a> EzpcError<'a> {
             } => EzpcError::Recursion {
                 max_depth,
                 parser_name,
-                pos: Position::from_ptr(source, pos),
-            },
-            RawEzpcError::MapError { input, error, pos } => EzpcError::MapError {
-                input,
-                error,
                 pos: Position::from_ptr(source, pos),
             },
         }
