@@ -37,7 +37,7 @@ fn string() -> Parser<impl Parse<Output = String>> {
         .repeat(1..)
         .map(|cs| cs.into_iter().collect::<String>());
     let utf16_char = tag("\\u")
-        + is_a("hexdigit", |c| c.is_ascii_hexdigit())
+        + is_a(|c| c.is_ascii_hexdigit())
             .repeat(4)
             .try_map(|digits| u16::from_str_radix(digits, 16));
     let utf16_string = utf16_char.repeat(1..).map(|chars| {

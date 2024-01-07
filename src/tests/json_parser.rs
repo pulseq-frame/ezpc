@@ -67,7 +67,7 @@ fn string() -> Parser<impl Parse<Output = String>> {
 }
 
 fn char_str() -> Parser<impl Parse<Output = String>> {
-    (is_a("aasdf", |c| !matches!(c, '\0'..='\u{1F}')).check(error_msg::UNESCAPED_CTRL_CHAR)
+    (is_a(|c| !matches!(c, '\0'..='\u{1F}')).check(error_msg::UNESCAPED_CTRL_CHAR)
         + none_of("\\\""))
     .repeat(1..)
     .map(|s| s.to_owned())
@@ -75,7 +75,7 @@ fn char_str() -> Parser<impl Parse<Output = String>> {
 
 fn utf16_str() -> Parser<impl Parse<Output = String>> {
     // TODO: Remove tag from is_a
-    let hex = is_a("adsf", |c| matches!(c, '0'..='9' | 'a'..='f' | 'A'..='F'))
+    let hex = is_a(|c| matches!(c, '0'..='9' | 'a'..='f' | 'A'..='F'))
         .repeat(4)
         .map(|s| u16::from_str_radix(s, 16).unwrap());
     (tag("\\u") + hex)

@@ -23,18 +23,12 @@ pub fn none_of(bag: &'static str) -> Matcher<NoneOf> {
     Matcher(NoneOf(bag))
 }
 
-pub struct IsA<F> {
-    predicate: F,
-    description: &'static str,
-}
-pub fn is_a<F>(description: &'static str, predicate: F) -> Matcher<IsA<F>>
+pub struct IsA<F>(F);
+pub fn is_a<F>(predicate: F) -> Matcher<IsA<F>>
 where
     F: Fn(char) -> bool,
 {
-    Matcher(IsA {
-        predicate,
-        description,
-    })
+    Matcher(IsA(predicate))
 }
 
 // All the Match implementations for the Matchers above
@@ -103,7 +97,7 @@ where
 {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         if let Some((c, rest)) = pop_char(input) {
-            if (self.predicate)(c) {
+            if (self.0)(c) {
                 log::trace!("MATCH! {} - IsA", log_input(input));
                 return Ok(rest);
             }
@@ -146,7 +140,7 @@ where
     F: Fn(char) -> bool,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "IsA({})", self.description)
+        write!(f, "IsA(...)")
     }
 }
 
