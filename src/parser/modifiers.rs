@@ -46,14 +46,16 @@ pub struct MapParse<P, F> {
     pub(crate) map_func: F,
 }
 
-pub struct TryMapMatch<M, F> {
+pub struct ConvertMatch<M, F> {
     pub(crate) matcher: M,
     pub(crate) map_func: F,
+    pub error_msg: &'static str,
 }
 
-pub struct TryMapParse<P, F> {
+pub struct ConvertParse<P, F> {
     pub(crate) parser: P,
     pub(crate) map_func: F,
+    pub error_msg: &'static str,
 }
 
 // Display Implementations
@@ -122,13 +124,13 @@ impl<P: Display, F> Display for MapParse<P, F> {
     }
 }
 
-impl<M: Display, F> Display for TryMapMatch<M, F> {
+impl<M: Display, F> Display for ConvertMatch<M, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.try_map(...)", self.matcher)
     }
 }
 
-impl<P: Display, F> Display for TryMapParse<P, F> {
+impl<P: Display, F> Display for ConvertParse<P, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.try_map(...)", self.parser)
     }
@@ -330,7 +332,7 @@ where
     }
 }
 
-impl<M, F, O, E> Parse for TryMapMatch<M, F>
+impl<M, F, O, E> Parse for ConvertMatch<M, F>
 where
     M: Match,
     F: Fn(&str) -> Result<O, E> + 'static,
@@ -343,12 +345,15 @@ where
             .apply(input)
             .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
-                Err(_) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
+                Err(_) => Err(RawEzpcError::Fatal {
+                    expected: self.error_msg,
+                    pos: rest.as_ptr(),
+                }),
             })
     }
 }
 
-impl<P, F, O, E> Parse for TryMapParse<P, F>
+impl<P, F, O, E> Parse for ConvertParse<P, F>
 where
     P: Parse,
     F: Fn(P::Output) -> Result<O, E> + 'static,
@@ -361,7 +366,10 @@ where
             .apply(input)
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
-                Err(_) => Err(RawEzpcError::PartialParse { pos: rest.as_ptr() }),
+                Err(_) => Err(RawEzpcError::Fatal {
+                    expected: self.error_msg,
+                    pos: rest.as_ptr(),
+                }),
             })
     }
 }

@@ -32,7 +32,7 @@ pub enum RawEzpcError {
 pub enum EzpcError<'a> {
     #[error("Parsing stopped before reaching end of input:\n{pos}")]
     PartialParse { pos: Position<'a> },
-    #[error("Expected {expected}:\n{pos}")]
+    #[error("{expected}\n{pos}")]
     Fatal {
         expected: &'static str,
         pos: Position<'a>,

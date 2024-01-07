@@ -54,9 +54,8 @@ fn integer() -> Matcher<impl Match> {
 fn number() -> Parser<impl Parse<Output = f64>> {
     let frac = tag(".") + one_of("0123456789").repeat(1..);
     let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
-    // TODO: from_str should never fail, if it does it's a bug. See comment below:
-    // introduce convert() function that returns Fatal with custom message if conversion fails
-    (tag("-").opt() + integer() + frac.opt() + exp.opt()).try_map(f64::from_str)
+    (tag("-").opt() + integer() + frac.opt() + exp.opt())
+        .convert(f64::from_str, error_msg::PARSE_ERROR)
 }
 
 fn string() -> Parser<impl Parse<Output = String>> {
@@ -74,16 +73,13 @@ fn char_str() -> Parser<impl Parse<Output = String>> {
 }
 
 fn utf16_str() -> Parser<impl Parse<Output = String>> {
-    // TODO: Remove tag from is_a
     let hex = is_a(|c| matches!(c, '0'..='9' | 'a'..='f' | 'A'..='F'))
         .repeat(4)
         .map(|s| u16::from_str_radix(s, 16).unwrap());
-    (tag("\\u") + hex)
-        .repeat(1..)
-        .try_map(|utf16| char::decode_utf16(utf16.into_iter()).collect())
-    // TODO: conversion error should return Fatal error, but not failer of matching.
-    // Maybe add new convert() parser combinator with error message?
-    // .fatal(error_msg::ILLEGAL_UTF16)
+    (tag("\\u") + hex).repeat(1..).convert(
+        |utf16| char::decode_utf16(utf16.into_iter()).collect(),
+        error_msg::ILLEGAL_UTF16,
+    )
 }
 
 fn esc_str() -> Parser<impl Parse<Output = String>> {
@@ -106,13 +102,14 @@ fn ws() -> Matcher<impl Match> {
 }
 
 mod error_msg {
-    pub(super) const UNCLOSED_STRING: &str = "Missing trailing '\"' to close string literal";
-    pub(super) const UNCLOSED_ARRAY: &str = "Missing trailing ']' to close array";
-    pub(super) const UNCLOSED_OBJECT: &str = "Missing trailing '}' to close object";
+    pub(super) const UNCLOSED_STRING: &str = "Missing trailing '\"' to close string literal:";
+    pub(super) const UNCLOSED_ARRAY: &str = "Missing trailing ']' to close array:";
+    pub(super) const UNCLOSED_OBJECT: &str = "Missing trailing '}' to close object:";
     pub(super) const ESCAPE_SEQUENCE: &str =
-        "Illegal escape sequence: Only \"\\/bfrnrt are allowed";
-    pub(super) const ILLEGAL_UTF16: &str = "Illegal utf-16 string";
-    pub(super) const LEADING_ZERO: &str = "Integer cannot start with a leading zero";
-    pub(super) const UNKNOWN_VALUE: &str = "Failed to parse expected value";
-    pub(super) const UNESCAPED_CTRL_CHAR: &str = "Illegal unescaped control character";
+        "Illegal escape sequence: Only \"\\/bfrnrt are allowed:";
+    pub(super) const ILLEGAL_UTF16: &str = "Illegal utf-16 string:";
+    pub(super) const LEADING_ZERO: &str = "Integer cannot start with a leading zero:";
+    pub(super) const UNKNOWN_VALUE: &str = "Failed to parse expected value:";
+    pub(super) const UNESCAPED_CTRL_CHAR: &str = "Illegal unescaped control character:";
+    pub(super) const PARSE_ERROR: &str = "Internal error: failed to parse matched string:";
 }

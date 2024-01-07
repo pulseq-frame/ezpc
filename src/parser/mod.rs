@@ -11,7 +11,7 @@ use crate::{
     result::{EzpcError, MatchResult, ParseResult, Position},
 };
 use modifiers::{
-    Fatal, MapMatch, MapParse, Opt, Repeat, TryMapMatch, TryMapParse, ValMatch, ValParse,
+    ConvertMatch, ConvertParse, Fatal, MapMatch, MapParse, Opt, Repeat, ValMatch, ValParse,
 };
 
 use self::modifiers::{CheckMatch, CheckParse};
@@ -88,14 +88,15 @@ impl<P: Parse> Parser<P> {
         })
     }
 
-    pub fn try_map<F, O, E>(self, f: F) -> Parser<TryMapParse<P, F>>
+    pub fn convert<F, O, E>(self, f: F, error_msg: &'static str) -> Parser<ConvertParse<P, F>>
     where
         F: Fn(P::Output) -> Result<O, E> + 'static,
         E: std::error::Error + 'static,
     {
-        Parser(TryMapParse {
+        Parser(ConvertParse {
             parser: self.0,
             map_func: f,
+            error_msg,
         })
     }
 }
@@ -171,14 +172,19 @@ impl<M: Match> Matcher<M> {
         })
     }
 
-    pub fn try_map<F, T, E>(self, map_func: F) -> Parser<TryMapMatch<M, F>>
+    pub fn convert<F, T, E>(
+        self,
+        map_func: F,
+        error_msg: &'static str,
+    ) -> Parser<ConvertMatch<M, F>>
     where
         F: Fn(&str) -> Result<T, E> + 'static,
         E: std::error::Error + 'static,
     {
-        Parser(TryMapMatch {
+        Parser(ConvertMatch {
             matcher: self.0,
             map_func,
+            error_msg,
         })
     }
 }
