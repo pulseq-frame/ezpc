@@ -1,9 +1,7 @@
 use crate::*;
 use std::str::FromStr;
 
-// Modelled after the official JSON grammar, see: json_grammar.txt
-
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub enum JsonValue {
     Object(Vec<(String, JsonValue)>),
     Array(Vec<JsonValue>),
@@ -14,10 +12,10 @@ pub enum JsonValue {
 }
 
 pub fn json() -> Parser<impl Parse<Output = JsonValue>> {
-    element()
+    value()
 }
 
-fn value() -> Parser<impl Parse<Output = JsonValue>> {
+fn value_inner() -> Parser<impl Parse<Output = JsonValue>> {
     object().map(|o| JsonValue::Object(o))
         | array().map(|a| JsonValue::Array(a))
         | string().map(|s| JsonValue::String(s))
@@ -27,120 +25,94 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
         | tag("null").val(JsonValue::Null)
 }
 
+fn value() -> Parser<impl Parse<Output = JsonValue>> {
+    // Whenever we try to parse a value it is a fatal error if we fail:
+    // If a value is expected, we know for sure there should be one and nothing else
+    ws() + value_inner.wrap(100).fatal(error_msg::UNKNOWN_VALUE) + ws()
+}
+
 fn object() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
+    let member = ws() + string() + ws() + tag(":") + value();
+    let members = list(member, tag(","));
     tag("{")
-        + ((ws() + tag("}")).val(Vec::new()) | (members() + tag("}").fatal("',' or '}'")))
-            .fatal("'}'")
-}
-
-fn members() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
-    list(member(), tag(","))
-}
-
-fn member() -> Parser<impl Parse<Output = (String, JsonValue)>> {
-    ws() + string() + ws() + tag(":").fatal("':' + value") + element()
+        + ((ws() + tag("}")).val(Vec::new()) | (members + tag("}")))
+            .fatal(error_msg::UNCLOSED_OBJECT)
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
+    let elements = list(value(), tag(","));
     tag("[")
-        + ((ws() + tag("]")).val(Vec::new()) | (elements() + tag("]").fatal("',' or ']'")))
-            .fatal("']'")
-}
-
-fn elements() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    list(element(), tag(","))
-}
-
-fn element() -> Parser<impl Parse<Output = JsonValue>> {
-    ws() + value.wrap(100).fatal("a value") + ws()
-}
-
-fn string() -> Parser<impl Parse<Output = String>> {
-    (tag("\"") + characters() + tag("\"").fatal("a closing \""))
-        .map(|chars| chars.into_iter().collect())
-}
-
-fn characters() -> Parser<impl Parse<Output = Vec<char>>> {
-    // In contrast to the spec, we parse utf16 characters separate to the
-    // escaped characters, because a single utf16 code point might not be a
-    // legal `char` (utf-32 code point). So the separate utf16 parser parses
-    // all consecutive \uXXXX escape sequences and splits it then into `char`s
-    (utf16_chars() | character().map(|c| vec![c]))
-        .repeat(0..)
-        .map(|nested| nested.into_iter().flatten().collect())
-}
-
-fn character() -> Parser<impl Parse<Output = char>> {
-    // The spec allows all characters between 0x20 and 0x10FFFF, but "surrogate
-    // code points" used by UTF-16 (0xD800 to 0xDFFF) are not valid code points
-    // for a single char. Rust strings are always valid unicode, so we parse
-    // everything except control characters (0x0 to 0x1F) as valid char.
-    is_a("control sequence", |c| !matches!(c, '\0'..='\u{1F}')).check("a valid utf-8 codepoint")
-        + is_a("utf-16 codepoint", |c| {
-            !matches!(c, '\0'..='\u{1F}' | '"' | '\\')
-        })
-        .map(|s| char::from_str(s).unwrap())
-        | (tag("\\") + escape().fatal("an escape sequence"))
-}
-
-fn escape() -> Parser<impl Parse<Output = char>> {
-    tag("\"").val('"')
-        | tag("\\").val('\\')
-        | tag("/").val('/')
-        | tag("b").val('\x08')
-        | tag("f").val('\x0C')
-        | tag("n").val('\n')
-        | tag("r").val('\r')
-        | tag("t").val('\t')
-    // 'u' hex hex hex hex already handled by utf16 chars
-}
-
-fn utf16_chars() -> Parser<impl Parse<Output = Vec<char>>> {
-    (tag("\\u") + hex().repeat(4).map(|s| u16::from_str_radix(s, 16).unwrap()))
-        .repeat(1..)
-        .try_map(|utf16| char::decode_utf16(utf16.into_iter()).collect())
-}
-
-fn hex() -> Matcher<impl Match> {
-    digit() | is_a("[A-F]", |c| matches!(c, 'A'..='F')) | is_a("[a-f]", |c| matches!(c, 'a'..='f'))
-}
-
-fn number() -> Parser<impl Parse<Output = f64>> {
-    (integer() + fraction() + exponent()).map(|s: &str| f64::from_str(s).unwrap())
+        + ((ws() + tag("]")).val(Vec::new()) | (elements + tag("]")))
+            .fatal(error_msg::UNCLOSED_ARRAY)
 }
 
 fn integer() -> Matcher<impl Match> {
-    // Small change from grammar: try to parse the longer matcher first,
-    // otherwise it fails when the integer continues.
-    (onenine() + digits())
-        | digit()
-        | (tag("-") + ((onenine() + digits()) | digit()).fatal("a number"))
+    (tag("0") + none_of("0123456789").check(error_msg::LEADING_ZERO))
+        | one_of("123456789") + one_of("0123456789").repeat(0..)
 }
 
-fn digits() -> Matcher<impl Match> {
-    digit().repeat(1..)
+fn number() -> Parser<impl Parse<Output = f64>> {
+    let frac = tag(".") + one_of("0123456789").repeat(1..);
+    let exp = one_of("eE") + one_of("+-").opt() + one_of("0123456789").repeat(1..);
+    // TODO: from_str should never fail, if it does it's a bug. See comment below:
+    // introduce convert() function that returns Fatal with custom message if conversion fails
+    (tag("-").opt() + integer() + frac.opt() + exp.opt()).try_map(f64::from_str)
 }
 
-fn digit() -> Matcher<impl Match> {
-    tag("0") | onenine()
+fn string() -> Parser<impl Parse<Output = String>> {
+    (tag("\"")
+        + (char_str() | utf16_str() | esc_str()).repeat(0..)
+        + tag("\"").fatal(error_msg::UNCLOSED_STRING))
+    .map(|strs| strs.concat())
 }
 
-fn onenine() -> Matcher<impl Match> {
-    is_a("[1-9]", |c| matches!(c, '1'..='9'))
+fn char_str() -> Parser<impl Parse<Output = String>> {
+    (is_a("aasdf", |c| !matches!(c, '\0'..='\u{1F}')).check(error_msg::UNESCAPED_CTRL_CHAR)
+        + none_of("\\\""))
+    .repeat(1..)
+    .map(|s| s.to_owned())
 }
 
-fn fraction() -> Matcher<impl Match> {
-    (tag(".") + digits().fatal("decimal places")).opt()
+fn utf16_str() -> Parser<impl Parse<Output = String>> {
+    // TODO: Remove tag from is_a
+    let hex = is_a("adsf", |c| matches!(c, '0'..='9' | 'a'..='f' | 'A'..='F'))
+        .repeat(4)
+        .map(|s| u16::from_str_radix(s, 16).unwrap());
+    (tag("\\u") + hex)
+        .repeat(1..)
+        .try_map(|utf16| char::decode_utf16(utf16.into_iter()).collect())
+    // TODO: conversion error should return Fatal error, but not failer of matching.
+    // Maybe add new convert() parser combinator with error message?
+    // .fatal(error_msg::ILLEGAL_UTF16)
 }
 
-fn exponent() -> Matcher<impl Match> {
-    (one_of("Ee") + sign() + digits().fatal("exponent")).opt()
-}
+fn esc_str() -> Parser<impl Parse<Output = String>> {
+    let esc = tag("\"").val("\"")
+        | tag("\\").val("\\")
+        | tag("/").val("/")
+        | tag("b").val("\x08")
+        | tag("f").val("\x0C")
+        | tag("n").val("\n")
+        | tag("r").val("\r")
+        | tag("t").val("\t");
 
-fn sign() -> Matcher<impl Match> {
-    one_of("+-").opt()
+    (tag("\\") + esc.fatal(error_msg::ESCAPE_SEQUENCE))
+        .repeat(1..)
+        .map(|strs| strs.concat())
 }
 
 fn ws() -> Matcher<impl Match> {
-    one_of("\u{20}\u{A}\u{D}\u{9}").repeat(0..)
+    one_of("\n\r\t ").repeat(0..)
+}
+
+mod error_msg {
+    pub(super) const UNCLOSED_STRING: &str = "Missing trailing '\"' to close string literal";
+    pub(super) const UNCLOSED_ARRAY: &str = "Missing trailing ']' to close array";
+    pub(super) const UNCLOSED_OBJECT: &str = "Missing trailing '}' to close object";
+    pub(super) const ESCAPE_SEQUENCE: &str =
+        "Illegal escape sequence: Only \"\\/bfrnrt are allowed";
+    pub(super) const ILLEGAL_UTF16: &str = "Illegal utf-16 string";
+    pub(super) const LEADING_ZERO: &str = "Integer cannot start with a leading zero";
+    pub(super) const UNKNOWN_VALUE: &str = "Failed to parse expected value";
+    pub(super) const UNESCAPED_CTRL_CHAR: &str = "Illegal unescaped control character";
 }
