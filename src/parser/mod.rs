@@ -9,10 +9,8 @@ use crate::{
     result::{EzpcError, MatchResult, ParseResult, Position},
 };
 use modifiers::{
-    ConvertMatch, ConvertParse, Fatal, MapMatch, MapParse, Opt, Repeat, ValMatch, ValParse,
+    ConvertMatch, ConvertParse, Fatal, MapMatch, MapParse, Opt, Reject, Repeat, ValMatch, ValParse,
 };
-
-use self::modifiers::Reject;
 
 pub trait Parse {
     type Output;

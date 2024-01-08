@@ -1,54 +1,57 @@
 use super::{Match, Parse};
 use crate::result::{MatchResult, ParseResult, RawEzpcError};
 
+// These structs are returned by Parser / Matcher methods, so the fields must
+// be public to the parent mod.
+
 pub struct Fatal<T> {
-    pub parser_or_matcher: T,
-    pub expected: &'static str,
+    pub(super) parser_or_matcher: T,
+    pub(super) expected: &'static str,
 }
 
 pub struct Reject<M> {
-    pub matcher: M,
-    pub expected: &'static str,
+    pub(super) matcher: M,
+    pub(super) expected: &'static str,
 }
 
 pub struct Repeat<T> {
-    pub(crate) parser_or_matcher: T,
-    pub(crate) start: usize,
-    pub(crate) end: usize,
+    pub(super) parser_or_matcher: T,
+    pub(super) start: usize,
+    pub(super) end: usize,
 }
 
-pub struct Opt<T>(pub(crate) T);
+pub struct Opt<T>(pub(super) T);
 
 pub struct ValMatch<M, T> {
-    pub(crate) matcher: M,
-    pub(crate) value: T,
+    pub(super) matcher: M,
+    pub(super) value: T,
 }
 
 pub struct ValParse<P, T> {
-    pub(crate) parser: P,
-    pub(crate) value: T,
+    pub(super) parser: P,
+    pub(super) value: T,
 }
 
 pub struct MapMatch<M, F> {
-    pub(crate) matcher: M,
-    pub(crate) map_func: F,
+    pub(super) matcher: M,
+    pub(super) map_func: F,
 }
 
 pub struct MapParse<P, F> {
-    pub(crate) parser: P,
-    pub(crate) map_func: F,
+    pub(super) parser: P,
+    pub(super) map_func: F,
 }
 
 pub struct ConvertMatch<M, F> {
-    pub(crate) matcher: M,
-    pub(crate) map_func: F,
-    pub error_msg: &'static str,
+    pub(super) matcher: M,
+    pub(super) map_func: F,
+    pub(super) error_msg: &'static str,
 }
 
 pub struct ConvertParse<P, F> {
-    pub(crate) parser: P,
-    pub(crate) map_func: F,
-    pub error_msg: &'static str,
+    pub(super) parser: P,
+    pub(super) map_func: F,
+    pub(super) error_msg: &'static str,
 }
 
 // Implementations for modified Parsers
