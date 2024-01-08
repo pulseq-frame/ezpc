@@ -4,8 +4,6 @@ pub mod matchers;
 pub mod modifiers;
 pub mod wrap;
 
-use std::fmt::Display;
-
 use crate::{
     range::RangeArgument,
     result::{EzpcError, MatchResult, ParseResult, Position},
@@ -16,18 +14,12 @@ use modifiers::{
 
 use self::modifiers::Reject;
 
-pub trait Parse: Display {
+pub trait Parse {
     type Output;
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output>;
 }
 
 pub struct Parser<T: Parse>(T);
-
-impl<T: Parse> Display for Parser<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
 
 impl<P: Parse> Parser<P> {
     pub fn parse_all<'a>(&self, source: &'a str) -> Result<P::Output, EzpcError<'a>> {
@@ -94,17 +86,11 @@ impl<P: Parse> Parser<P> {
     }
 }
 
-pub trait Match: Display {
+pub trait Match {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a>;
 }
 
 pub struct Matcher<M: Match>(M);
-
-impl<T: Match> Display for Matcher<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
 
 impl<M: Match> Matcher<M> {
     pub fn match_all<'a>(&self, source: &'a str) -> Result<(), EzpcError<'a>> {

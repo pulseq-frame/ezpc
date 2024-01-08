@@ -2,7 +2,6 @@ use std::{
     any::{type_name, Any, TypeId},
     cell::{Cell, OnceCell, RefCell},
     collections::HashMap,
-    fmt::Display,
     rc::{Rc, Weak},
 };
 
@@ -51,15 +50,6 @@ impl<O: 'static> Parse for WrappedParser<O> {
         DEPTH.with(|d| d.set(d.get() - 1));
 
         result
-    }
-}
-
-impl<O: 'static> Display for WrappedParser<O> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.parser {
-            ParserRef::Strong(p) => p.get().unwrap().fmt(f),
-            ParserRef::Weak(_) => write!(f, "<{}>", self.name),
-        }
     }
 }
 
@@ -160,15 +150,6 @@ impl Match for WrappedMatcher {
         DEPTH.with(|d| d.set(d.get() - 1));
 
         result
-    }
-}
-
-impl Display for WrappedMatcher {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.matcher {
-            MatcherRef::Strong(p) => p.get().unwrap().fmt(f),
-            MatcherRef::Weak(_) => write!(f, "<{}>", self.name),
-        }
     }
 }
 

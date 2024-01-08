@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use super::{Match, Matcher, Parse, Parser};
 use crate::result::{ParseResult, RawEzpcError};
 
@@ -68,15 +66,5 @@ where
                 }
             }
         })
-    }
-}
-
-impl<P, M> Display for List<P, M>
-where
-    P: Parse,
-    M: Match,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "List({}, {})", self.element, self.separator)
     }
 }

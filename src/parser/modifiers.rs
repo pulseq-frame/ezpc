@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use super::{Match, Parse};
 use crate::result::{MatchResult, ParseResult, RawEzpcError};
 
@@ -51,78 +49,6 @@ pub struct ConvertParse<P, F> {
     pub(crate) parser: P,
     pub(crate) map_func: F,
     pub error_msg: &'static str,
-}
-
-// Display Implementations
-
-impl<T: Display> Display for Fatal<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "!{}: {}", self.parser_or_matcher, self.expected)
-    }
-}
-
-impl<M: Match> Display for Reject<M> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "!{}: {}", self.matcher, self.expected)
-    }
-}
-
-impl<T: Display> Display for Repeat<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.end == usize::MAX {
-            write!(f, "{}*({}..)", self.parser_or_matcher, self.start)
-        } else if self.end + 1 == self.start {
-            write!(f, "{}*({})", self.parser_or_matcher, self.start)
-        } else {
-            write!(
-                f,
-                "{}*({}..={})",
-                self.parser_or_matcher, self.start, self.end
-            )
-        }
-    }
-}
-
-impl<T: Display> Display for Opt<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}?", self.0)
-    }
-}
-
-impl<M: Display, T> Display for ValMatch<M, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.val(...)", self.matcher)
-    }
-}
-
-impl<P: Display, T> Display for ValParse<P, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.val(...)", self.parser)
-    }
-}
-
-impl<M: Display, F> Display for MapMatch<M, F> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.map(...)", self.matcher)
-    }
-}
-
-impl<P: Display, F> Display for MapParse<P, F> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.map(...)", self.parser)
-    }
-}
-
-impl<M: Display, F> Display for ConvertMatch<M, F> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.try_map(...)", self.matcher)
-    }
-}
-
-impl<P: Display, F> Display for ConvertParse<P, F> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.try_map(...)", self.parser)
-    }
 }
 
 // Implementations for modified Parsers
