@@ -2,16 +2,9 @@
 // json test suite, especially checking if the error messages are acceptable.
 
 mod json_parser;
+pub use json_parser::json;
 use std::fs;
-
-use self::json_parser::json;
 use std::io::Write;
-
-#[test]
-/// Print the automatically generated description of the json parser
-fn print_parser() {
-    println!("{}", json());
-}
 
 #[test]
 /// Parse all files that should succeed
@@ -33,7 +26,7 @@ fn test_suite_y() {
 }
 
 #[test]
-/// Parse all files that should succeed
+/// Parse all files that should fail
 fn test_suite_n() {
     let paths = fs::read_dir("src/tests/JSONTestSuite/test_parsing").unwrap();
     let mut error_file = fs::File::create("src/tests/output.txt").unwrap();
