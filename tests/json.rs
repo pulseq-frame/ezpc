@@ -1,15 +1,17 @@
 // We test ezpc by writing a standards compliant json parser and running it on a
 // json test suite, especially checking if the error messages are acceptable.
+// https://github.com/nst/JSONTestSuite
 
-mod json_parser;
-pub use json_parser::json;
+#[path ="../benches/json_ezpc.rs"]
+mod json_ezpc;
+pub use json_ezpc::json;
 use std::fs;
 use std::io::Write;
 
 #[test]
 /// Parse all files that should succeed
 fn test_suite_y() {
-    let paths = fs::read_dir("src/tests/JSONTestSuite/test_parsing").unwrap();
+    let paths = fs::read_dir("tests/test_parsing").unwrap();
 
     for path in paths {
         let path = path.unwrap();
@@ -28,8 +30,8 @@ fn test_suite_y() {
 #[test]
 /// Parse all files that should fail
 fn test_suite_n() {
-    let paths = fs::read_dir("src/tests/JSONTestSuite/test_parsing").unwrap();
-    let mut error_file = fs::File::create("src/tests/output.txt").unwrap();
+    let paths = fs::read_dir("tests/test_parsing").unwrap();
+    let mut error_file = fs::File::create("tests/output.txt").unwrap();
 
     for path in paths {
         let path = path.unwrap();
@@ -51,7 +53,7 @@ fn test_suite_n() {
 #[test]
 /// Parse files which might or might not succeed - but parser should not crash
 fn test_suite_i() {
-    let paths = fs::read_dir("src/tests/JSONTestSuite/test_parsing").unwrap();
+    let paths = fs::read_dir("tests/test_parsing").unwrap();
 
     for path in paths {
         let path = path.unwrap();

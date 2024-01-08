@@ -1,8 +1,6 @@
 mod parser;
 mod range;
 mod result;
-// #[cfg(test)]
-pub mod tests;
 
 pub use parser::{
     combinators::list,

@@ -1,6 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 mod json_pom;
+mod json_ezpc;
 
 fn json(c: &mut Criterion) {
     let input = include_str!("data.json");
@@ -14,7 +15,7 @@ fn json(c: &mut Criterion) {
 
     group.bench_function("ezpc", |b| {
         b.iter(|| {
-            ezpc::tests::json().parse_all(black_box(&input)).ok();
+            json_ezpc::json().parse_all(black_box(&input)).ok();
         })
     });
 
