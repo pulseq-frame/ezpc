@@ -134,11 +134,14 @@ impl<M: Match> Match for Fatal<M> {
 impl<M: Match> Match for Reject<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         match self.matcher.apply(input) {
-            Ok(_) =>  Err(RawEzpcError::Fatal { message: self.expected, pos: input.as_ptr() }),
+            Ok(_) => Err(RawEzpcError::Fatal {
+                message: self.expected,
+                pos: input.as_ptr(),
+            }),
             Err(err) => match err {
                 RawEzpcError::Mismatch { .. } => Ok(input),
-                _ => Err(err)
-            }
+                _ => Err(err),
+            },
         }
     }
 }

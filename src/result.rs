@@ -46,7 +46,10 @@ impl<'a> EzpcError<'a> {
             RawEzpcError::Mismatch { pos } => EzpcError::PartialParse {
                 pos: Position::from_ptr(source, pos),
             },
-            RawEzpcError::Fatal { message: expected, pos } => EzpcError::Fatal {
+            RawEzpcError::Fatal {
+                message: expected,
+                pos,
+            } => EzpcError::Fatal {
                 expected,
                 pos: Position::from_ptr(source, pos),
             },

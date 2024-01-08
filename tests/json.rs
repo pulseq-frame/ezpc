@@ -2,7 +2,7 @@
 // json test suite, especially checking if the error messages are acceptable.
 // https://github.com/nst/JSONTestSuite
 
-#[path ="../benches/json_ezpc.rs"]
+#[path = "../benches/json_ezpc.rs"]
 mod json_ezpc;
 pub use json_ezpc::json;
 use std::fs;
