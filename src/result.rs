@@ -10,7 +10,7 @@ pub enum RawEzpcError {
         pos: *const u8,
     },
     Fatal {
-        expected: &'static str,
+        message: &'static str,
         pos: *const u8,
     },
     Recursion {
@@ -46,7 +46,7 @@ impl<'a> EzpcError<'a> {
             RawEzpcError::Mismatch { pos } => EzpcError::PartialParse {
                 pos: Position::from_ptr(source, pos),
             },
-            RawEzpcError::Fatal { expected, pos } => EzpcError::Fatal {
+            RawEzpcError::Fatal { message: expected, pos } => EzpcError::Fatal {
                 expected,
                 pos: Position::from_ptr(source, pos),
             },

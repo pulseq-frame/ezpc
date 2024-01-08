@@ -10,9 +10,14 @@ where
 {
     element: P,
     separator: M,
+    item_mismatch_error_msg: &'static str,
 }
 
-pub fn list<P, M>(element: Parser<P>, separator: Matcher<M>) -> Parser<List<P, M>>
+pub fn list<P, M>(
+    element: Parser<P>,
+    separator: Matcher<M>,
+    item_mismatch_error_msg: &'static str,
+) -> Parser<List<P, M>>
 where
     P: Parse,
     M: Match,
@@ -20,6 +25,7 @@ where
     Parser(List {
         element: element.0,
         separator: separator.0,
+        item_mismatch_error_msg,
     })
 }
 
@@ -31,31 +37,37 @@ where
     type Output = Vec<P::Output>;
 
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
-        let mut items = Vec::new();
-
-        // TODO: shorten code by replacing match with Option::map()
-        match self.element.apply(input) {
-            Ok((item, mut input)) => {
-                items.push(item);
-                // TODO: the separator might return a fatal error which we should handle?
-                // But this would be strange since the separator should be simple (no recursion error)
-                // and not expected, as it is optional (list has arbitrary length)
-                while let Ok(rest) = self.separator.apply(input) {
-                    match self.element.apply(rest) {
+        // A list contains at least one element - if this errors the error is returned.
+        // If it has success, we try to repeately parse separator + element
+        self.element.apply(input).and_then(|(item, mut input)| {
+            let mut items = vec![item];
+            loop {
+                // Parse as many list elements as possible
+                match self.separator.apply(input) {
+                    // Separator did not apply, list is finished, return
+                    Err(RawEzpcError::Mismatch { .. }) => return Ok((items, input)),
+                    // Separator returned some other error, forward it
+                    Err(err) => return Err(err),
+                    // Separator applied, now we expect a list element
+                    Ok(rest) => match self.element.apply(rest) {
                         Ok((item, rest)) => {
                             items.push(item);
                             input = rest;
                         }
-                        Err(err) => match err {
-                            RawEzpcError::Mismatch { .. } => break,
-                            _ => return Err(err),
-                        },
-                    }
+                        // List element didn't apply even though we had a separator -> fatal
+                        Err(err) => {
+                            return Err(match err {
+                                RawEzpcError::Mismatch { pos } => RawEzpcError::Fatal {
+                                    message: self.item_mismatch_error_msg,
+                                    pos,
+                                },
+                                _ => err,
+                            })
+                        }
+                    },
                 }
-                Ok((items, input))
             }
-            Err(err) => Err(err),
-        }
+        })
     }
 }
 

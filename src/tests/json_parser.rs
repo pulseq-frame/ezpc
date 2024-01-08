@@ -33,14 +33,14 @@ fn value() -> Parser<impl Parse<Output = JsonValue>> {
 
 fn object() -> Parser<impl Parse<Output = Vec<(String, JsonValue)>>> {
     let member = ws() + string() + ws() + tag(":") + value();
-    let members = list(member, tag(","));
+    let members = list(member, tag(","), error_msg::MISSING_OBJECT_MEMBER);
     tag("{")
         + ((ws() + tag("}")).val(Vec::new()) | (members + tag("}")))
             .fatal(error_msg::UNCLOSED_OBJECT)
 }
 
 fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
-    let elements = list(value(), tag(","));
+    let elements = list(value(), tag(","), error_msg::MISSING_ARRAY_ELEMENT);
     tag("[")
         + ((ws() + tag("]")).val(Vec::new()) | (elements + tag("]")))
             .fatal(error_msg::UNCLOSED_ARRAY)
@@ -112,4 +112,6 @@ mod error_msg {
     pub(super) const UNKNOWN_VALUE: &str = "Failed to parse expected value:";
     pub(super) const UNESCAPED_CTRL_CHAR: &str = "Illegal unescaped control character:";
     pub(super) const PARSE_ERROR: &str = "Internal error: failed to parse matched string:";
+    pub(super) const MISSING_ARRAY_ELEMENT: &str = "Expected an array element:";
+    pub(super) const MISSING_OBJECT_MEMBER: &str = "Expected an object member:";
 }

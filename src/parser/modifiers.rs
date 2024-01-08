@@ -135,7 +135,7 @@ impl<P: Parse> Parse for Fatal<P> {
             .apply(input)
             .map_err(|err| match err {
                 RawEzpcError::Mismatch { pos } => RawEzpcError::Fatal {
-                    expected: self.expected,
+                    message: self.expected,
                     pos,
                 },
                 _ => err,
@@ -194,7 +194,7 @@ impl<M: Match> Match for Fatal<M> {
             .apply(input)
             .map_err(|err| match err {
                 RawEzpcError::Mismatch { pos } => RawEzpcError::Fatal {
-                    expected: self.expected,
+                    message: self.expected,
                     pos,
                 },
                 _ => err,
@@ -205,7 +205,7 @@ impl<M: Match> Match for Fatal<M> {
 impl<M: Match> Match for Reject<M> {
     fn apply<'a>(&self, input: &'a str) -> MatchResult<'a> {
         match self.matcher.apply(input) {
-            Ok(_) =>  Err(RawEzpcError::Fatal { expected: self.expected, pos: input.as_ptr() }),
+            Ok(_) =>  Err(RawEzpcError::Fatal { message: self.expected, pos: input.as_ptr() }),
             Err(err) => match err {
                 RawEzpcError::Mismatch { .. } => Ok(input),
                 _ => Err(err)
@@ -317,7 +317,7 @@ where
             .and_then(|rest| match (self.map_func)(consumed(input, rest)) {
                 Ok(out) => Ok((out, rest)),
                 Err(_) => Err(RawEzpcError::Fatal {
-                    expected: self.error_msg,
+                    message: self.error_msg,
                     pos: rest.as_ptr(),
                 }),
             })
@@ -338,7 +338,7 @@ where
             .and_then(|(tmp, rest)| match (self.map_func)(tmp) {
                 Ok(out) => Ok((out, rest)),
                 Err(_) => Err(RawEzpcError::Fatal {
-                    expected: self.error_msg,
+                    message: self.error_msg,
                     pos: rest.as_ptr(),
                 }),
             })
