@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use thiserror::Error;
-
 pub type ParseResult<'a, O> = Result<(O, &'a str), RawEzpcError>;
 pub type MatchResult<'a> = Result<&'a str, RawEzpcError>;
 
@@ -23,21 +21,41 @@ pub enum RawEzpcError {
 /// Differs from RawEzpcError in that it has a Display implementation and that
 /// the raw position pointers are converted in a printable Position struct.
 /// This struct is aware of the input and can point to the exact location.
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum EzpcError<'a> {
-    #[error("Parsing stopped before reaching end of input:\n{pos}")]
-    PartialParse { pos: Position<'a> },
-    #[error("{expected}\n{pos}")]
+    PartialParse {
+        pos: Position<'a>,
+    },
     Fatal {
         expected: &'static str,
         pos: Position<'a>,
     },
-    #[error("Exceeded maximum recursion depth {max_depth} of parser {parser_name}:\n{pos}")]
     Recursion {
         max_depth: usize,
         parser_name: &'static str,
         pos: Position<'a>,
     },
+}
+
+impl<'a> std::error::Error for EzpcError<'a> {}
+
+impl<'a> std::fmt::Display for EzpcError<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EzpcError::PartialParse { pos } => {
+                write!(f, "Parsing stopped before reaching end of input:\n{pos}")
+            }
+            EzpcError::Fatal { expected, pos } => write!(f, "{expected}\n{pos}"),
+            EzpcError::Recursion {
+                max_depth,
+                parser_name,
+                pos,
+            } => write!(
+                f,
+                "Exceeded maximum recursion depth {max_depth} of parser {parser_name}:\n{pos}"
+            ),
+        }
+    }
 }
 
 impl<'a> EzpcError<'a> {
