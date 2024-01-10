@@ -22,24 +22,24 @@ pub enum RawEzpcError {
 /// the raw position pointers are converted in a printable Position struct.
 /// This struct is aware of the input and can point to the exact location.
 #[derive(Debug)]
-pub enum EzpcError<'a> {
+pub enum EzpcError {
     PartialParse {
-        pos: Position<'a>,
+        pos: Position,
     },
     Fatal {
         expected: &'static str,
-        pos: Position<'a>,
+        pos: Position,
     },
     Recursion {
         max_depth: usize,
         parser_name: &'static str,
-        pos: Position<'a>,
+        pos: Position,
     },
 }
 
-impl<'a> std::error::Error for EzpcError<'a> {}
+impl std::error::Error for EzpcError {}
 
-impl<'a> std::fmt::Display for EzpcError<'a> {
+impl std::fmt::Display for EzpcError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             EzpcError::PartialParse { pos } => {
@@ -58,8 +58,8 @@ impl<'a> std::fmt::Display for EzpcError<'a> {
     }
 }
 
-impl<'a> EzpcError<'a> {
-    pub fn from_raw(raw: RawEzpcError, source: &'a str) -> Self {
+impl EzpcError {
+    pub fn from_raw(raw: RawEzpcError, source: &str) -> Self {
         match raw {
             RawEzpcError::Mismatch { pos } => EzpcError::PartialParse {
                 pos: Position::from_ptr(source, pos),
@@ -85,14 +85,14 @@ impl<'a> EzpcError<'a> {
 }
 
 #[derive(Debug)]
-pub struct Position<'a> {
+pub struct Position {
     line: usize,
     column: usize,
-    line_str: &'a str,
+    line_str: String,
 }
 
-impl<'a> Position<'a> {
-    pub fn from_ptr(source: &'a str, pos_ptr: *const u8) -> Self {
+impl Position {
+    pub fn from_ptr(source: &str, pos_ptr: *const u8) -> Self {
         let source_ptr = source.as_ptr() as usize;
         let pos_ptr = pos_ptr as usize;
         assert!(pos_ptr >= source_ptr);
@@ -106,7 +106,7 @@ impl<'a> Position<'a> {
             .find('\r')
             .or(source[line_start..].find('\n'))
             .unwrap_or(source[line_start..].len());
-        let line_str = &source[line_start..line_start + line_len];
+        let line_str = source[line_start..line_start + line_len].to_owned();
 
         Self {
             line,
@@ -116,7 +116,7 @@ impl<'a> Position<'a> {
     }
 }
 
-impl<'a> Display for Position<'a> {
+impl Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let pad = " ".repeat(self.line.ilog10() as usize + 1);
         writeln!(f, " --> line {}, column {}", self.line, self.column)?;

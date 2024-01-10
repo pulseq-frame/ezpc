@@ -41,7 +41,7 @@ fn test_suite_n() {
             // Some files contain invalid utf8, which are ignored
             if let Ok(source) = std::str::from_utf8(&source) {
                 println!("{name}");
-                match json().parse_all(&source) {
+                match json().parse_all(source) {
                     Ok(_) => panic!("Parsed despite having errors '{name}'"),
                     Err(err) => writeln!(error_file, "{name}\n{err}\n").unwrap(),
                 }
@@ -63,7 +63,7 @@ fn test_suite_i() {
             // Some files contain invalid utf8, which are ignored
             if let Ok(source) = std::str::from_utf8(&source) {
                 println!("{name}");
-                println!("{:?}", json().parse_all(&source));
+                println!("{:?}", json().parse_all(source));
             }
         }
     }

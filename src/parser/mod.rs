@@ -20,7 +20,7 @@ pub trait Parse {
 pub struct Parser<T: Parse>(T);
 
 impl<P: Parse> Parser<P> {
-    pub fn parse_all<'a>(&self, source: &'a str) -> Result<P::Output, EzpcError<'a>> {
+    pub fn parse_all(&self, source: &str) -> Result<P::Output, EzpcError> {
         match self.0.apply(source) {
             Ok((out, rest)) => {
                 if rest.is_empty() {
@@ -91,7 +91,7 @@ pub trait Match {
 pub struct Matcher<M: Match>(M);
 
 impl<M: Match> Matcher<M> {
-    pub fn match_all<'a>(&self, source: &'a str) -> Result<(), EzpcError<'a>> {
+    pub fn match_all(&self, source: &str) -> Result<(), EzpcError> {
         match self.0.apply(source) {
             Ok(rest) => {
                 if rest.is_empty() {

@@ -99,7 +99,7 @@ impl<M1: Match, P2: Parse> Parse for AndMP<M1, P2> {
     fn apply<'a>(&self, input: &'a str) -> ParseResult<'a, Self::Output> {
         self.0
             .apply(input)
-            .and_then(|rest| self.1.apply(rest).map(|(out, rest)| (out, rest)))
+            .and_then(|rest| self.1.apply(rest))
     }
 }
 

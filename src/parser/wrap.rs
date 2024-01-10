@@ -163,8 +163,9 @@ where
     F: Fn() -> Matcher<M> + 'static,
 {
     fn wrap(self, max_depth: usize) -> Matcher<WrappedMatcher> {
+        type MatchRef = Rc<OnceCell<Box<dyn Match>>>;
         thread_local! {
-            static IN_PROGRESS: RefCell<HashMap<TypeId, Rc<OnceCell<Box<dyn Match>>>>> = Default::default();
+            static IN_PROGRESS: RefCell<HashMap<TypeId, MatchRef>> = Default::default();
         }
         let type_id = self.type_id();
 
@@ -172,7 +173,7 @@ where
             in_prog
                 .borrow()
                 .get(&type_id)
-                .map(|matcher| Rc::downgrade(matcher))
+                .map(Rc::downgrade)
         }) {
             return Matcher(WrappedMatcher {
                 matcher: MatcherRef::Weak(matcher),

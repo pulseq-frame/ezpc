@@ -16,10 +16,10 @@ pub fn json() -> Parser<impl Parse<Output = JsonValue>> {
 }
 
 fn value_inner() -> Parser<impl Parse<Output = JsonValue>> {
-    object().map(|o| JsonValue::Object(o))
-        | array().map(|a| JsonValue::Array(a))
-        | string().map(|s| JsonValue::String(s))
-        | number().map(|x| JsonValue::Number(x))
+    object().map(JsonValue::Object)
+        | array().map(JsonValue::Array)
+        | string().map(JsonValue::String)
+        | number().map(JsonValue::Number)
         | tag("true").val(JsonValue::Bool(true))
         | tag("false").val(JsonValue::Bool(false))
         | tag("null").val(JsonValue::Null)
@@ -47,8 +47,7 @@ fn array() -> Parser<impl Parse<Output = Vec<JsonValue>>> {
 }
 
 fn integer() -> Matcher<impl Match> {
-    (tag("0") + one_of("0123456789").reject(error_msg::LEADING_ZERO))
-        | one_of("123456789") + one_of("0123456789").repeat(0..)
+    (tag("0") + one_of("0123456789").reject(error_msg::LEADING_ZERO)) | (one_of("123456789") + one_of("0123456789").repeat(0..))
 }
 
 fn number() -> Parser<impl Parse<Output = f64>> {
@@ -73,11 +72,11 @@ fn char_str() -> Parser<impl Parse<Output = String>> {
 }
 
 fn utf16_str() -> Parser<impl Parse<Output = String>> {
-    let hex = is_a(|c| matches!(c, '0'..='9' | 'a'..='f' | 'A'..='F'))
+    let hex = is_a(|c| c.is_ascii_hexdigit())
         .repeat(4)
         .map(|s| u16::from_str_radix(s, 16).unwrap());
     (tag("\\u") + hex).repeat(1..).convert(
-        |utf16| char::decode_utf16(utf16.into_iter()).collect(),
+        |utf16| char::decode_utf16(utf16).collect(),
         error_msg::ILLEGAL_UTF16,
     )
 }

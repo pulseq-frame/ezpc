@@ -109,7 +109,7 @@ impl<T: Parse> Parse for Opt<T> {
             Ok((out, rest)) => Ok((Some(out), rest)),
             Err(err) => match err {
                 RawEzpcError::Mismatch { .. } => Ok((None, input)),
-                _ => return Err(err),
+                _ => Err(err),
             },
         }
     }
@@ -179,7 +179,7 @@ impl<T: Match> Match for Opt<T> {
             Ok(rest) => Ok(rest),
             Err(err) => match err {
                 RawEzpcError::Mismatch { .. } => Ok(input),
-                _ => return Err(err),
+                _ => Err(err),
             },
         }
     }

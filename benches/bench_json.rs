@@ -15,7 +15,7 @@ fn json(c: &mut Criterion) {
 
     group.bench_function("ezpc", |b| {
         b.iter(|| {
-            json_ezpc::json().parse_all(black_box(&input)).ok();
+            json_ezpc::json().parse_all(black_box(input)).ok();
         })
     });
 
