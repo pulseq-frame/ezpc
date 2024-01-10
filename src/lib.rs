@@ -8,3 +8,4 @@ pub use parser::{
     wrap::{WrapMatcher, WrapParser},
     Match, Matcher, Parse, Parser,
 };
+pub use result::{EzpcError, MatchResult, ParseResult};
