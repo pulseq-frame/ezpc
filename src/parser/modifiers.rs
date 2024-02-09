@@ -278,10 +278,11 @@ where
 }
 
 /// Helper function that returns the parsed part of the source str
+/// NOTE: returned string can be empty if an optional Matcher didn't apply
 fn consumed<'a>(source: &'a str, substr: &'a str) -> &'a str {
     let start_source = source.as_ptr() as usize;
     let start_substr = substr.as_ptr() as usize;
-    assert!(start_substr > start_source);
+    assert!(start_substr >= start_source);
 
     let advanced_by = start_substr - start_source;
     &source[..advanced_by]
