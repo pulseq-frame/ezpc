@@ -13,54 +13,18 @@ use ezpc::*;
 fn main() {
     let src = r##"
     
-int1 = +99
-int2 = 42
-int3 = 0
-int4 = -17
-int5 = 1_000
-int6 = 5_349_221
-int7 = 53_49_221  # Indian number system grouping
-int8 = 1_2_3_4_5  # VALID but discouraged
+ld1 = 1979-05-27
 
-# hexadecimal with prefix `0x`
-hex1 = 0xDEADBEEF
-hex2 = 0xdeadbeef
-hex3 = 0xdead_beef
+lt1 = 07:32:00
+lt2 = 00:32:00.999999
 
-# octal with prefix `0o`
-oct1 = 0o01234567
-oct2 = 0o755 # useful for Unix file permissions
+ldt1 = 1979-05-27T07:32:00
+ldt2 = 1979-05-27T00:32:00.999999
 
-# binary with prefix `0b`
-bin1 = 0b11010110
-    
-# fractional
-flt1 = +1.0
-flt2 = 3.1415
-flt3 = -0.01
-
-# exponent
-flt4 = 5e+22
-flt5 = 1e06
-flt6 = -2E-2
-
-# both
-flt7 = 6.626e-34
-
-flt8 = 224_617.445_991_228
-
-# infinity
-sf1 = inf  # positive infinity
-sf2 = +inf # positive infinity
-sf3 = -inf # negative infinity
-
-# not a number
-sf4 = nan  # actual sNaN/qNaN encoding is implementation-specific
-sf5 = +nan # same as `nan`
-sf6 = -nan # valid, actual encoding is implementation-specific
-
-bool1 = true
-bool2 = false
+odt1 = 1979-05-27T07:32:00Z
+odt2 = 1979-05-27T00:32:00-07:00
+odt3 = 1979-05-27T00:32:00.999999-07:00
+odt4 = 1979-05-27 07:32:00Z
 
 "##;
 
@@ -86,6 +50,39 @@ pub enum Value {
     Integer(i64),
     Float(f64),
     Boolean(bool),
+    DateTime(DateTime),
+}
+
+/// https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
+/// Parser does not check if date is valid.
+/// Parsing differs from RFC3339 like specified by TOML
+#[derive(Clone, Debug)]
+pub struct DateTime {
+    pub date: Option<Date>,
+    pub time: Option<Time>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Date {
+    pub fullyear: u32,
+    pub month: u32,
+    pub mday: u32,
+}
+
+#[derive(Clone, Debug)]
+pub struct Time {
+    pub hour: u32,
+    pub minute: u32,
+    pub second: u32,
+    pub secfrac: Option<f32>,
+    pub offset: Option<TimeOffset>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TimeOffset {
+    pub sign: i8,
+    pub hour: u32,
+    pub minute: u32,
 }
 
 #[derive(Clone, Debug)]
@@ -135,6 +132,7 @@ fn quoted_key() -> Parser<impl Parse<Output = String>> {
 fn value() -> Parser<impl Parse<Output = Value>> {
     (tag("true").val(Value::Boolean(true))
         | tag("false").val(Value::Boolean(false))
+        | datetime().map(Value::DateTime)
         | float().map(Value::Float)
         | integer().map(Value::Integer)
         | multiline_basic_string().map(Value::String)
@@ -313,9 +311,72 @@ fn esc_str() -> Parser<impl Parse<Output = String>> {
         .map(|strs| strs.concat())
 }
 
+// ----------------
+// DateTime parsing
+// ----------------
+
+fn datetime() -> Parser<impl Parse<Output = DateTime>> {
+    (date() + (one_of(" tT") + time()).opt()).map(|(date, time)| DateTime {
+        date: Some(date),
+        time,
+    }) | time().map(|time| DateTime {
+        date: None,
+        time: Some(time),
+    })
+}
+
+fn date() -> Parser<impl Parse<Output = Date>> {
+    let full_date = digits(4) + tag("-") + digits(2) + tag("-") + digits(2);
+
+    full_date.map(|((fullyear, month), mday)| Date {
+        fullyear,
+        month,
+        mday,
+    })
+}
+
+fn time() -> Parser<impl Parse<Output = Time>> {
+    // NOTE: Toml spec says that if secfrac has higher precision than the implementation can support,
+    // it should be truncated not rounded. We will round anyways.
+
+    let secfrac = tag(".")
+        + is_a(|c| c.is_ascii_digit())
+            .repeat(1..)
+            .map(|s| format!("0.{s}").parse().unwrap());
+    let partial_time = digits(2) + tag(":") + digits(2) + tag(":") + digits(2) + secfrac.opt();
+    let full_time = partial_time + time_offset().opt();
+
+    full_time.map(|((((hour, minute), second), secfrac), offset)| Time {
+        hour,
+        minute,
+        second,
+        secfrac,
+        offset,
+    })
+}
+
+fn time_offset() -> Parser<impl Parse<Output = TimeOffset>> {
+    let sign = (tag("+").val(1) | tag("-").val(-1))
+        .opt()
+        .map(|x| x.unwrap_or(1));
+    let numoffset = sign + digits(2) + tag(":") + digits(2);
+
+    one_of("zZ").val(TimeOffset {
+        sign: 1,
+        hour: 0,
+        minute: 0,
+    }) | numoffset.map(|((sign, hour), minute)| TimeOffset { sign, hour, minute })
+}
+
 // --------------------------------
 // Helper functions and definitions
 // --------------------------------
+
+fn digits(len: usize) -> Parser<impl Parse<Output = u32>> {
+    is_a(|c| c.is_ascii_digit())
+        .repeat(len)
+        .map(|s| s.parse().unwrap())
+}
 
 fn ws() -> Matcher<impl Match> {
     one_of(" \t").repeat(0..)
